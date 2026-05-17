@@ -57,17 +57,3 @@ To build a production-grade AI platform that demonstrates:
 ## 🧱 System Architecture
 
 ### High-Level Flow
-
----
-
-Frontend (Next.js)
-↓
-Backend API (FastAPI)
-↓
-AI Services Layer
-↓
-Vector DB (Qdrant)
-↓
-Local LLM (Ollama / vLLM)
-
----
