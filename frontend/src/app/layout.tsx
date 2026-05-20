@@ -1,19 +1,20 @@
-import type { Metadata } from "next";
 import "./globals.css";
+
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "CareerOps AI",
-  description: "AI-powered career platform",
+  description: "AI-powered career intelligence platform",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full w-full bg-black text-white overflow-hidden">
+    <html lang="en">
+      <body>
         {children}
       </body>
     </html>
