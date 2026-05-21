@@ -47,11 +47,11 @@ export default function AnalyzePage() {
       <BackgroundEffects />
 
       <PageContainer>
-
+      <div className="flex flex-col items-center text-center">
         {/* HEADER */}
         <div className="text-center">
 
-          <div className="mb-8 inline-flex rounded-full border border-green-400/30 bg-green-400/5 px-5 py-2 text-sm text-green-300 backdrop-blur-sm">
+          <div className="mb-8 rounded-full border border-green-400/30 bg-green-400/5 px-5 py-2 text-sm text-green-300 backdrop-blur-sm">
             AI Processing Engine
           </div>
 
@@ -167,7 +167,7 @@ export default function AnalyzePage() {
           </div>
 
         </div>
-
+      </div>              
       </PageContainer>
 
     </main>

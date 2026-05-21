@@ -47,11 +47,11 @@ export default function UploadPage() {
       <BackgroundEffects />
 
       <PageContainer>
-
+      <div className="flex flex-col items-center text-center">
         {/* Header */}
         <div className="text-center">
 
-          <div className="mb-8 inline-flex rounded-full border border-green-400/30 bg-green-400/5 px-5 py-2 text-sm text-green-300 backdrop-blur-sm">
+          <div className="mb-8  items-center justify-center rounded-full border border-green-400/30 bg-green-400/5 px-14 pt-3 pb-[14px] text-base text-green-300 backdrop-blur-sm">
             AI Resume Upload
           </div>
 
@@ -149,7 +149,7 @@ export default function UploadPage() {
 
             {/* File Name */}
             {fileName && (
-              <div className="mt-6 rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300">
+              <div className="mt-6 rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300 ">
                 {fileName}
               </div>
             )}
@@ -188,7 +188,7 @@ export default function UploadPage() {
           )}
 
         </div>
-
+      </div>
       </PageContainer>
 
     </main>

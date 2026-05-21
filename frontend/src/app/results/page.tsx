@@ -19,11 +19,11 @@ export default function ResultsPage() {
       <BackgroundEffects />
 
       <PageContainer>
-
+      <div className="flex w-full flex-col items-center">
         {/* HEADER */}
         <div className="text-center">
 
-          <div className="mb-8 inline-flex rounded-full border border-green-400/30 bg-green-400/5 px-5 py-2 text-sm text-green-300 backdrop-blur-sm">
+          <div className="mb-8  items-center justify-center rounded-full border border-green-400/30 bg-green-400/5 px-14 pt-3 pb-[14px] text-base text-green-300 backdrop-blur-sm">
             AI Analysis Complete
           </div>
 
@@ -39,12 +39,12 @@ export default function ResultsPage() {
         </div>
 
         {/* DASHBOARD */}
-        <div className="mt-16 grid w-full gap-6 lg:grid-cols-3">
+        <div className="mt-16 grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
           {/* ATS SCORE */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+          <div className="overflow-hidden break-words rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-center text-white/50">
               ATS Compatibility
             </p>
 
@@ -63,7 +63,7 @@ export default function ResultsPage() {
           {/* MATCH SCORE */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-center text-white/50">
               Job Match Score
             </p>
 
@@ -82,7 +82,7 @@ export default function ResultsPage() {
           {/* EXPERIENCE */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-center text-white/50">
               Experience Level
             </p>
 
@@ -90,7 +90,7 @@ export default function ResultsPage() {
               Mid
             </h2>
 
-            <p className="mt-4 text-white/60">
+            <p className="mt-4 text-center text-white/60">
               Strong cloud and DevOps engineering background detected.
             </p>
 
@@ -99,13 +99,13 @@ export default function ResultsPage() {
         </div>
 
         {/* SKILLS */}
-        <div className="mt-10 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-2xl text-center font-semibold">
             Extracted Skills
           </h2>
 
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
 
             {skills.map((skill) => (
               <div
@@ -134,30 +134,32 @@ export default function ResultsPage() {
         </div>
 
         {/* AI RECOMMENDATIONS */}
-        <div className="mt-10 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-          <h2 className="text-2xl font-semibold">
+          <h2 className="text-2xl text-center font-semibold">
             AI Recommendations
           </h2>
 
           <div className="mt-8 space-y-5">
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-              Improve ATS keywords for cloud-native engineering roles.
+            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
+              Improve ATS keywords for cloud-natiATS Compatibility
+
+                ve engineering roles.
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
               Add measurable DevOps deployment metrics to experience section.
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
               Highlight Kubernetes and Terraform projects more prominently.
             </div>
 
           </div>
 
         </div>
-
+      </div>
       </PageContainer>
 
     </main>

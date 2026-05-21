@@ -16,7 +16,7 @@ export default function HomePage() {
       </div>
 
       {/* CONTENT */}
-      <div className="relative z-10 px-6 text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center">
 
         {/* Badge */}
         <div className="mb-8 inline-flex  px-5 py-2 text-sm text-green-300/80 backdrop-blur-sm">
@@ -38,34 +38,71 @@ export default function HomePage() {
         </p>
 
         {/* BUTTON */}
-        <div className="mt-12 flex justify-center">
-          <Link href="/upload" className="upload-btn group">
+       <div className="mt-12 flex justify-center">
+        <Link
+          href="/upload"
+          className="
+            group
+            inline-flex
+            items-center
+            justify-center
+            gap-4
+            rounded-full
+            bg-gradient-to-r
+            from-green-500
+            to-emerald-600
+            px-8
+            py-4
+            text-lg
+            font-semibold
+            text-white
+            shadow-[0_0_45px_rgba(34,197,94,0.35)]
+            transition-all
+            duration-300
+            hover:scale-105
+            hover:shadow-[0_0_65px_rgba(34,197,94,0.55)]
+          "
+        >
 
-            {/* Circle icon container */}
-            <span className="upload-btn-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2.5}
-                stroke="currentColor"
-                className="h-6 w-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 16V4m0 0l-4 4m4-4l4 4M4 16.5v1.125C4 18.936 5.064 20 6.375 20h11.25C18.936 20 20 18.936 20 17.625V16.5"
-                />
-              </svg>
-            </span>
+          {/* Icon */}
+          <span
+            className="
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-full
+              bg-white/10
+              transition-all
+              duration-300
+              group-hover:bg-white/20
+            "
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2.5}
+              stroke="currentColor"
+              className="h-6 w-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 16V4m0 0l-4 4m4-4l4 4M4 16.5v1.125C4 18.936 5.064 20 6.375 20h11.25C18.936 20 20 18.936 20 17.625V16.5"
+              />
+            </svg>
+          </span>
 
-            {/* Label */}
-            <span className="upload-btn-label">
-              Upload Resume
-            </span>
+          {/* Text */}
+          <span>
+            Upload Resume
+          </span>
 
-          </Link>
+        </Link>
         </div>
+
 
         {/* Footer */}
         <p className="mt-14 text-xs uppercase tracking-[0.35em] text-white/30">

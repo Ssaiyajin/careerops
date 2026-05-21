@@ -1,98 +1,62 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* RESET */
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
+  padding: 0;
+  margin: 0;
 }
 
-html, body {
+html,
+body {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background: #050505;
+  min-height: 100%;
+  overflow-x: hidden;
+
+  background: #000;
   color: white;
+
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ── Grid ── */
-.ai-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(74, 222, 128, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74, 222, 128, 0.04) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+/* SMOOTH SCROLL */
+
+html {
+  scroll-behavior: smooth;
 }
 
-/* ── Glow orbs ── */
-.glow {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(110px);
-  opacity: 0.32;
-}
-.green  { width: 520px; height: 520px; background: #22c55e; }
-.blue   { width: 440px; height: 440px; background: #3b82f6; }
-.purple { width: 480px; height: 480px; background: #a855f7; }
+/* BODY */
 
-/* ── Pill button ── */
-.upload-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  border-radius: 9999px;
-  padding: 6px 28px 6px 6px;
-  background: rgba(74, 222, 128, 0.08);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    0 0 30px rgba(74, 222, 128, 0.1),
-    0 4px 24px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s ease;
-  text-decoration: none;
+body {
+  position: relative;
 }
 
-.upload-btn:hover {
-  background: rgba(74, 222, 128, 0.14);
-  border-color: rgba(74, 222, 128, 0.55);
-  box-shadow:
-    0 0 55px rgba(74, 222, 128, 0.22),
-    0 4px 24px rgba(0, 0, 0, 0.5);
-  transform: translateY(-2px);
+/* CUSTOM ANIMATIONS */
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
-/* Circle icon on left */
-.upload-btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 9999px;
-  background: rgba(74, 222, 128, 0.15);
-  border: 1px solid rgba(74, 222, 128, 0.4);
-  color: #4ade80;
-  flex-shrink: 0;
-  transition: background 0.3s ease, border-color 0.3s ease;
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
 
-.upload-btn:hover .upload-btn-icon {
-  background: rgba(74, 222, 128, 0.28);
-  border-color: rgba(74, 222, 128, 0.7);
-}
-
-/* Label */
-.upload-btn-label {
-  padding-left: 20px;
-  padding-right: 8px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: white;
-  white-space: nowrap;
+p,
+h1,
+h2,
+h3,
+span,
+div {
+  word-wrap: break-word;
 }
