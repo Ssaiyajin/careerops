@@ -1,18 +1,33 @@
+"use client";
+
+import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
-const skills = [
-  "Python",
-  "Docker",
-  "Kubernetes",
-  "Terraform",
-  "AWS",
-  "CI/CD",
-  "FastAPI",
-  "Machine Learning",
-];
+
+
 
 export default function ResultsPage() {
+  const data = getResumeData();
+  const skills = data?.skills || [];
+
+  const entities = data?.entities;
+
+  const candidateName =
+    entities?.names?.[0] || "Unknown Candidate";
+
+  const candidateEmail =
+    entities?.emails?.[0] || "No Email Found";
+
+  const candidateLocation =
+    entities?.locations?.[0] || "Unknown Location";
+    if (!data) {
+      return (
+        <main className="flex min-h-screen items-center justify-center bg-black text-white">
+          No resume data found.
+        </main>
+      );
+    }
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
@@ -28,12 +43,12 @@ export default function ResultsPage() {
           </div>
 
           <h1 className="text-6xl font-bold tracking-tight">
-            Resume Results
+            {candidateName}
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-white/70">
-            Your resume was successfully analyzed using AI-powered
-            skill extraction and job matching systems.
+            AI successfully analyzed your resume and extracted
+            skills, entities, and career insights dynamically.
           </p>
 
         </div>
@@ -98,6 +113,48 @@ export default function ResultsPage() {
 
         </div>
 
+        {/* USER INFO */}
+        <div className="mt-10 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+
+          <h2 className="text-2xl text-center font-semibold">
+            Candidate Information
+          </h2>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
+              <p className="text-sm text-white/50">
+                Name
+              </p>
+
+              <p className="mt-2 text-lg text-white">
+                {candidateName}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
+              <p className="text-sm text-white/50">
+                Email
+              </p>
+
+              <p className="mt-2 text-lg text-white break-all">
+                {candidateEmail}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
+              <p className="text-sm text-white/50">
+                Location
+              </p>
+
+              <p className="mt-2 text-lg text-white">
+                {candidateLocation}
+              </p>
+            </div>
+
+          </div>
+
+        </div>
         {/* SKILLS */}
         <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
@@ -143,9 +200,7 @@ export default function ResultsPage() {
           <div className="mt-8 space-y-5">
 
             <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Improve ATS keywords for cloud-natiATS Compatibility
-
-                ve engineering roles.
+              Improve ATS keywords for cloud-native engineering roles.
             </div>
 
             <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">

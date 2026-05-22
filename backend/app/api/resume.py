@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from pathlib import Path
 from app.services.nlp_processor import process_text
+from app.services.entity_extractor import extract_entities
 import shutil
 
 from app.services.pdf_parser import extract_text_from_pdf
@@ -34,10 +35,14 @@ async def upload_resume(file: UploadFile = File(...)):
     # Extract skills
     skills = extract_skills(extracted_text)
 
+    # Extract entities
+    entities = extract_entities(extracted_text)
+
     return {
     "message": "Resume processed successfully",
     "filename": file.filename,
     "skills": skills,
+    "entities": entities,
     "token_preview": tokens[:50],
     "text_preview": extracted_text[:1000]
     }
