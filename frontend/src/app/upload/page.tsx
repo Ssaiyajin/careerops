@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { uploadResume } from "@/lib/api";
+import { setResumeData } from "@/store/resumeStore";
+
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
@@ -14,33 +17,64 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
+  event: React.ChangeEvent<HTMLInputElement>
+    ) => {
 
-    if (!file) return;
+      const file = event.target.files?.[0];
 
-    setFileName(file.name);
+      if (!file) return;
+      console.log("FILE SELECTED:", file.name);
+      setFileName(file.name);
 
-    setUploading(true);
+      setUploading(true);
 
-    let currentProgress = 0;
+      setProgress(15);
 
-    const interval = setInterval(() => {
-      currentProgress += 10;
+      try {
 
-      setProgress(currentProgress);
+        // fake smooth progress
+        const progressInterval = setInterval(() => {
 
-      if (currentProgress >= 100) {
-        clearInterval(interval);
+          setProgress((prev) => {
+
+            if (prev >= 90) {
+              clearInterval(progressInterval);
+              return prev;
+            }
+
+            return prev + 10;
+          });
+
+        }, 300);
+        
+        console.log("CALLING BACKEND...");
+        // REAL backend upload
+        console.log("Starting upload...");
+
+        const data = await uploadResume(file);
+
+        console.log("BACKEND RESPONSE:", data);
+
+        setResumeData(data);
+
+        // complete progress
+        setProgress(100);
 
         setTimeout(() => {
-          router.push("/analyze");
-        }, 700);
-      }
-    }, 200);
-  };
+          router.push("/results");
+        }, 1000);
 
+      } catch (error) {
+
+        console.error("UPLOAD ERROR:", error);
+
+        alert("Upload failed. Check browser console.");
+
+        setUploading(false);
+      }
+    };
+
+    
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
@@ -115,11 +149,11 @@ export default function UploadPage() {
 
           
             <input
-              type="file"
-              accept=".pdf"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+  type="file"
+  accept=".pdf"
+  onChange={handleFileChange}
+  className="text-white"
+/>
 
             {/* Upload Icon */}
             <div className="rounded-full bg-green-500/10 p-6">

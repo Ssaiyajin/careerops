@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-  reactCompiler: true,
-};
+import path from "path";
+
+const nextConfig = {
+  turbopack: {
+    root: path.join(__dirname),
+  },
+}; 
 
 export default nextConfig;
