@@ -1,5 +1,17 @@
 type ResumeData = {
   skills: string[];
+
+  candidate_name: string;
+
+  ats: {
+    ats_score: number;
+    recommendations: string[];
+  };
+
+  experience_level: string;
+
+  job_match?: number;
+
   entities: {
     names: string[];
     organizations: string[];
@@ -8,6 +20,7 @@ type ResumeData = {
     emails: string[];
     phones: string[];
   };
+
   text_preview: string;
 };
 

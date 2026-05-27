@@ -3,28 +3,45 @@
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-
+import { useEffect, useState } from "react";
 
 
 
 export default function ResultsPage() {
-  const data = getResumeData();
+  const [data, setData] = useState<any>(null);
+
+    useEffect(() => {
+      const storedData = getResumeData();
+      setData(storedData);
+    }, []);
+
   const skills = data?.skills || [];
 
   const entities = data?.entities;
-
+  
   const candidateName =
-    entities?.names?.[0] || "Unknown Candidate";
+    data?.candidate_name || "Unknown Candidate";
 
   const candidateEmail =
     entities?.emails?.[0] || "No Email Found";
 
   const candidateLocation =
     entities?.locations?.[0] || "Unknown Location";
+
+  const atsScore =
+    data?.ats?.ats_score || 0;
+
+  const experienceLevel =
+    data?.experience_level || "Unknown";
+
+  const recommendations =
+    data?.ats?.recommendations || [];
+
+    
     if (!data) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-black text-white">
-          No resume data found.
+          Loading...
         </main>
       );
     }
@@ -63,16 +80,24 @@ export default function ResultsPage() {
               ATS Compatibility
             </p>
 
-            <h2 className="mt-4 text-6xl font-bold text-green-400">
-              86%
+            <h2 className="mt-4 text-6xl text-center font-bold text-green-400">
+              {atsScore}%
             </h2>
 
-            <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-
-              <div className="h-full w-[86%] rounded-full bg-gradient-to-r from-green-400 to-emerald-500" />
-
-            </div>
-
+            <div
+              className="
+                h-3
+                rounded-full
+                bg-gradient-to-r
+                from-green-400
+                to-emerald-500
+                transition-all
+                duration-500
+              "
+              style={{
+                width: `${atsScore}%`,
+              }}
+            />
           </div>
 
           {/* MATCH SCORE */}
@@ -83,13 +108,17 @@ export default function ResultsPage() {
             </p>
 
             <h2 className="mt-4 text-6xl font-bold text-cyan-400">
-              78%
+              {data?.job_match?.match_score || 0}%
             </h2>
 
             <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
 
-              <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-cyan-400 to-blue-500" />
-
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
+                style={{
+                  width: `${data?.job_match?.match_score || 0}%`,
+                }}
+              />
             </div>
 
           </div>
@@ -101,8 +130,8 @@ export default function ResultsPage() {
               Experience Level
             </p>
 
-            <h2 className="mt-4 text-6xl font-bold text-purple-400">
-              Mid
+            <h2 className="mt-4 text-6xl text-center font-bold text-purple-400">
+              {experienceLevel}
             </h2>
 
             <p className="mt-4 text-center text-white/60">
@@ -197,22 +226,43 @@ export default function ResultsPage() {
             AI Recommendations
           </h2>
 
-          <div className="mt-8 space-y-5">
+           <div className="mt-8 space-y-5">
 
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Improve ATS keywords for cloud-native engineering roles.
-            </div>
+            {recommendations.length > 0 ? (
+              recommendations.map((recommendation: string) => (
+                <div
+                  key={recommendation}
+                  className="
+                    break-words
+                    text-center
+                    rounded-2xl
+                    border
+                    border-white/10
+                    bg-black/20
+                    p-5
+                    text-white/80
+                  "
+                >
+                  {recommendation}
+                </div>
+              ))
+            ) : (
+              <div
+                className="
+                  text-center
+                  rounded-2xl
+                  border
+                  border-green-400/20
+                  bg-green-400/5
+                  p-5
+                  text-green-300
+                "
+              >
+                Resume looks well optimized for ATS systems.
+              </div>
+            )}
 
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Add measurable DevOps deployment metrics to experience section.
-            </div>
-
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Highlight Kubernetes and Terraform projects more prominently.
-            </div>
-
-          </div>
-
+          </div> 
         </div>
       </div>
       </PageContainer>

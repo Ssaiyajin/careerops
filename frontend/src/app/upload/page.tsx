@@ -15,7 +15,7 @@ export default function UploadPage() {
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-
+  const [model, setModel] = useState("mistral");
   const handleFileChange = async (
   event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -51,7 +51,7 @@ export default function UploadPage() {
         // REAL backend upload
         console.log("Starting upload...");
 
-        const data = await uploadResume(file);
+        const data = await uploadResume(file, model)
 
         console.log("BACKEND RESPONSE:", data);
 
@@ -63,11 +63,15 @@ export default function UploadPage() {
         setTimeout(() => {
           router.push("/results");
         }, 1000);
+        
+        event.target.value = "";
 
       } catch (error) {
 
         console.error("UPLOAD ERROR:", error);
 
+        event.target.value = "";
+        
         alert("Upload failed. Check browser console.");
 
         setUploading(false);
@@ -220,6 +224,50 @@ export default function UploadPage() {
 
             </div>
           )}
+
+
+          {/* MODEL SELECTOR */}
+          <div className="mb-8 flex justify-center gap-4">
+
+            <button
+              type="button"
+              onClick={() => setModel("mistral:latest")}
+              className={`
+                rounded-xl
+                px-6
+                py-3
+                border
+                transition-all
+                ${
+                  model === "mistral:latest"
+                    ? "bg-cyan-500 text-black border-cyan-400"
+                    : "bg-black/30 text-white border-white/20"
+                }
+              `}
+            >
+               Mistral (Smart)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setModel("phi3:mini")}
+              className={`
+                rounded-xl
+                px-6
+                py-3
+                border
+                transition-all
+                ${
+                  model === "phi3:mini"
+                    ? "bg-green-500 text-black border-green-400"
+                    : "bg-black/30 text-white border-white/20"
+                }
+              `}
+            >
+              Phi-3 Mini (Fast)
+            </button>
+
+          </div>
 
         </div>
       </div>

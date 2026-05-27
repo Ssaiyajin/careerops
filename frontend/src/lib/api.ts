@@ -1,14 +1,15 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "http://localhost:8000";
 
-export async function uploadResume(file: File) {
-
-  console.log("UPLOAD FUNCTION STARTED");
+export async function uploadResume(
+  file: File,
+  model: string
+) {
 
   const formData = new FormData();
 
   formData.append("file", file);
 
-  console.log("FORM DATA CREATED");
+  formData.append("model", model);
 
   try {
 
@@ -20,13 +21,16 @@ export async function uploadResume(file: File) {
       }
     );
 
-    console.log("RAW RESPONSE:", response);
+    if (!response.ok) {
 
-    const data = await response.json();
+      const errorText = await response.text();
 
-    console.log("PARSED DATA:", data);
+      console.error("BACKEND ERROR:", errorText);
 
-    return data;
+      throw new Error("Upload failed");
+    }
+
+    return response.json();
 
   } catch (error) {
 
