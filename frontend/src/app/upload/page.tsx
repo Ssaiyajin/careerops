@@ -15,7 +15,10 @@ export default function UploadPage() {
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [model, setModel] = useState("mistral");
+  const [model, setModel] = useState("mistral:latest");
+
+  const [jobDescription, setJobDescription] = useState("");
+
   const handleFileChange = async (
   event: React.ChangeEvent<HTMLInputElement>
     ) => {
@@ -51,7 +54,11 @@ export default function UploadPage() {
         // REAL backend upload
         console.log("Starting upload...");
 
-        const data = await uploadResume(file, model)
+        const data = await uploadResume(
+          file,
+          model,
+          jobDescription
+        )
 
         console.log("BACKEND RESPONSE:", data);
 
@@ -122,6 +129,30 @@ export default function UploadPage() {
           hover:shadow-[0_0_80px_rgba(34,197,94,0.12)]
           " 
         >
+        <div className="mt-8 w-full max-w-3xl">
+          <label className="mb-3 block text-left text-sm text-white/70">
+            Paste Job Description
+          </label>
+
+          <textarea
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            placeholder="Paste LinkedIn or company job description here..."
+            className="
+              h-64
+              w-full
+              rounded-2xl
+              border
+              border-white/10
+              bg-black/40
+              p-5
+              text-white
+              outline-none
+              backdrop-blur-sm
+              focus:border-green-400
+            "
+          />
+        </div>
           {/* Upload Area */}
           <label
             className="

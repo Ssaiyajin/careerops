@@ -2,6 +2,7 @@ import shutil
 
 from fastapi import APIRouter, UploadFile, File, Form
 from pathlib import Path
+from fastapi import Form
 from app.services.nlp_processor import process_text
 from app.services.entity_extractor import extract_entities
 from app.services.ats_scorer import calculate_ats_score
@@ -19,11 +20,7 @@ router = APIRouter()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-job_description = """
-We are looking for a DevOps Engineer
-with experience in Docker, Kubernetes,
-Terraform, AWS, CI/CD, and Python.
-"""
+
 target_job_skills = [
     "Python",
     "Docker",
@@ -38,7 +35,8 @@ target_job_skills = [
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    model: str = Form(...)
+    model: str = Form(...),
+    job_description: str = Form(...)
 ):
 
     # Validate PDF
@@ -88,6 +86,17 @@ async def upload_resume(
     extracted_text,
     job_description
     )
+    missing_skills = []
+
+    job_words = job_description.lower().split()
+
+    for skill in target_job_skills:
+        if (
+            skill.lower() in job_words
+            and skill not in skills
+        ):
+            missing_skills.append(skill)
+
 
     ai_recommendations = generate_ai_recommendations(
     extracted_text,
@@ -99,6 +108,7 @@ async def upload_resume(
     "candidate_name": candidate_name,
     "filename": file.filename,
     "skills": skills,
+    "missing_skills": missing_skills,
     "entities": entities,
     "token_preview": tokens[:50],
     "text_preview": extracted_text[:1000],
