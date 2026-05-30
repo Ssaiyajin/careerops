@@ -14,6 +14,7 @@ export default function UploadPage() {
 
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
   const [model, setModel] = useState("mistral:latest");
 
@@ -30,7 +31,7 @@ export default function UploadPage() {
       setFileName(file.name);
 
       setUploading(true);
-
+      setStatus("Uploading resume...");
       setProgress(15);
 
       try {
@@ -54,18 +55,36 @@ export default function UploadPage() {
         // REAL backend upload
         console.log("Starting upload...");
 
+        setStatus("Uploading Resume...");
+        setProgress(20);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Extracting Skills...");
+        setProgress(40);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Calculating ATS Score...");
+        setProgress(60);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Running AI Analysis...");
+        setProgress(80);
+
         const data = await uploadResume(
           file,
           model,
           jobDescription
-        )
+        );
+
+        setStatus("Analysis Complete");
+        setProgress(100);
 
         console.log("BACKEND RESPONSE:", data);
 
         setResumeData(data);
-
-        // complete progress
-        setProgress(100);
 
         setTimeout(() => {
           router.push("/results");
@@ -184,11 +203,11 @@ export default function UploadPage() {
 
           
             <input
-  type="file"
-  accept=".pdf"
-  onChange={handleFileChange}
-  className="text-white"
-/>
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="text-white"
+            />
 
             {/* Upload Icon */}
             <div className="rounded-full bg-green-500/10 p-6">
@@ -229,8 +248,16 @@ export default function UploadPage() {
           {uploading && (
             <div className="mt-8">
 
+              <div className="mb-4 text-center">
+
+                <p className="text-green-300 font-medium animate-pulse">
+                  {status}
+                </p>
+
+              </div>
+
               <div className="mb-3 flex justify-between text-sm text-white/60">
-                <span>Uploading Resume...</span>
+                <span>CareerOps Processing</span>
                 <span>{progress}%</span>
               </div>
 
@@ -244,7 +271,7 @@ export default function UploadPage() {
                     from-green-400
                     to-emerald-500
                     transition-all
-                    duration-200
+                    duration-300
                   "
                   style={{
                     width: `${progress}%`,
@@ -299,7 +326,7 @@ export default function UploadPage() {
             </button>
 
           </div>
-
+                
         </div>
       </div>
       </PageContainer>
