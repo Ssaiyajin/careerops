@@ -14,7 +14,11 @@ export default function UploadPage() {
 
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+  const [model, setModel] = useState("mistral:latest");
+
+  const [jobDescription, setJobDescription] = useState("");
 
   const handleFileChange = async (
   event: React.ChangeEvent<HTMLInputElement>
@@ -27,7 +31,7 @@ export default function UploadPage() {
       setFileName(file.name);
 
       setUploading(true);
-
+      setStatus("Uploading resume...");
       setProgress(15);
 
       try {
@@ -51,23 +55,49 @@ export default function UploadPage() {
         // REAL backend upload
         console.log("Starting upload...");
 
-        const data = await uploadResume(file);
+        setStatus("Uploading Resume...");
+        setProgress(20);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Extracting Skills...");
+        setProgress(40);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Calculating ATS Score...");
+        setProgress(60);
+
+        await new Promise((r) => setTimeout(r, 500));
+
+        setStatus("Running AI Analysis...");
+        setProgress(80);
+
+        const data = await uploadResume(
+          file,
+          model,
+          jobDescription
+        );
+
+        setStatus("Analysis Complete");
+        setProgress(100);
 
         console.log("BACKEND RESPONSE:", data);
 
         setResumeData(data);
 
-        // complete progress
-        setProgress(100);
-
         setTimeout(() => {
           router.push("/results");
         }, 1000);
+        
+        event.target.value = "";
 
       } catch (error) {
 
         console.error("UPLOAD ERROR:", error);
 
+        event.target.value = "";
+        
         alert("Upload failed. Check browser console.");
 
         setUploading(false);
@@ -118,6 +148,30 @@ export default function UploadPage() {
           hover:shadow-[0_0_80px_rgba(34,197,94,0.12)]
           " 
         >
+        <div className="mt-8 w-full max-w-3xl">
+          <label className="mb-3 block text-left text-sm text-white/70">
+            Paste Job Description
+          </label>
+
+          <textarea
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            placeholder="Paste LinkedIn or company job description here..."
+            className="
+              h-64
+              w-full
+              rounded-2xl
+              border
+              border-white/10
+              bg-black/40
+              p-5
+              text-white
+              outline-none
+              backdrop-blur-sm
+              focus:border-green-400
+            "
+          />
+        </div>
           {/* Upload Area */}
           <label
             className="
@@ -149,11 +203,11 @@ export default function UploadPage() {
 
           
             <input
-  type="file"
-  accept=".pdf"
-  onChange={handleFileChange}
-  className="text-white"
-/>
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="text-white"
+            />
 
             {/* Upload Icon */}
             <div className="rounded-full bg-green-500/10 p-6">
@@ -194,8 +248,16 @@ export default function UploadPage() {
           {uploading && (
             <div className="mt-8">
 
+              <div className="mb-4 text-center">
+
+                <p className="text-green-300 font-medium animate-pulse">
+                  {status}
+                </p>
+
+              </div>
+
               <div className="mb-3 flex justify-between text-sm text-white/60">
-                <span>Uploading Resume...</span>
+                <span>CareerOps Processing</span>
                 <span>{progress}%</span>
               </div>
 
@@ -209,7 +271,7 @@ export default function UploadPage() {
                     from-green-400
                     to-emerald-500
                     transition-all
-                    duration-200
+                    duration-300
                   "
                   style={{
                     width: `${progress}%`,
@@ -221,6 +283,50 @@ export default function UploadPage() {
             </div>
           )}
 
+
+          {/* MODEL SELECTOR */}
+          <div className="mb-8 flex justify-center gap-4">
+
+            <button
+              type="button"
+              onClick={() => setModel("mistral:latest")}
+              className={`
+                rounded-xl
+                px-6
+                py-3
+                border
+                transition-all
+                ${
+                  model === "mistral:latest"
+                    ? "bg-cyan-500 text-black border-cyan-400"
+                    : "bg-black/30 text-white border-white/20"
+                }
+              `}
+            >
+               Mistral (Smart)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setModel("phi3:mini")}
+              className={`
+                rounded-xl
+                px-6
+                py-3
+                border
+                transition-all
+                ${
+                  model === "phi3:mini"
+                    ? "bg-green-500 text-black border-green-400"
+                    : "bg-black/30 text-white border-white/20"
+                }
+              `}
+            >
+              Phi-3 Mini (Fast)
+            </button>
+
+          </div>
+                
         </div>
       </div>
       </PageContainer>

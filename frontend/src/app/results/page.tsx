@@ -3,28 +3,56 @@
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-
+import { useEffect, useState } from "react";
 
 
 
 export default function ResultsPage() {
-  const data = getResumeData();
+  const [data, setData] = useState<any>(null);
+
+    useEffect(() => {
+      const storedData = getResumeData();
+      setData(storedData);
+    }, []);
+
   const skills = data?.skills || [];
 
   const entities = data?.entities;
-
+  
   const candidateName =
-    entities?.names?.[0] || "Unknown Candidate";
+    data?.candidate_name || "Unknown Candidate";
 
   const candidateEmail =
     entities?.emails?.[0] || "No Email Found";
 
   const candidateLocation =
     entities?.locations?.[0] || "Unknown Location";
+
+  const atsScore =
+    data?.ats?.ats_score || 0;
+
+  const experienceLevel =
+    data?.experience_level || "Unknown";
+
+  const matchedSkills =
+  data?.job_match?.matched_skills || [];
+
+  const missingSkills =
+    data?.job_match?.missing_skills || [];
+
+  const semanticScore =
+    data?.semantic_match?.semantic_match_score || 0;
+
+  const aiRecommendations =
+    data?.ai_recommendations || "";
+
+  const textPreview =
+    data?.text_preview || "";
+    
     if (!data) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-black text-white">
-          No resume data found.
+          Loading...
         </main>
       );
     }
@@ -59,37 +87,71 @@ export default function ResultsPage() {
           {/* ATS SCORE */}
           <div className="overflow-hidden break-words rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-center text-white/50">
+            <p className="text-base text-center text-white/50">
               ATS Compatibility
             </p>
 
-            <h2 className="mt-4 text-6xl font-bold text-green-400">
-              86%
+            <h2 className="mt-4 text-6xl text-center font-bold text-green-400">
+              {atsScore}%
             </h2>
 
-            <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
-
-              <div className="h-full w-[86%] rounded-full bg-gradient-to-r from-green-400 to-emerald-500" />
-
-            </div>
-
+            <div
+              className="
+                h-3
+                rounded-full
+                bg-gradient-to-r
+                from-green-400
+                to-emerald-500
+                transition-all
+                duration-500
+              "
+              style={{
+                width: `${atsScore}%`,
+              }}
+            />
           </div>
 
           {/* MATCH SCORE */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-center text-white/50">
+            <p className="text-base text-center text-white/50">
               Job Match Score
             </p>
 
-            <h2 className="mt-4 text-6xl font-bold text-cyan-400">
-              78%
+            <h2 className="mt-4 text-6xl text-center font-bold text-cyan-400">
+              {data?.job_match?.match_score || 0}%
             </h2>
 
             <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
 
-              <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-cyan-400 to-blue-500" />
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
+                style={{
+                  width: `${data?.job_match?.match_score || 0}%`,
+                }}
+              />
+            </div>
 
+          </div>
+
+          {/* SEMANTIC MATCH */}
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+
+            <p className="text-base text-center text-white/50">
+              Semantic Match
+            </p>
+
+            <h2 className="mt-4 text-6xl text-center font-bold text-yellow-400">
+              {semanticScore}%
+            </h2>
+
+            <div className="mt-6 h-3 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-yellow-400 to-orange-500"
+                style={{
+                  width: `${semanticScore}%`,
+                }}
+              />
             </div>
 
           </div>
@@ -97,12 +159,12 @@ export default function ResultsPage() {
           {/* EXPERIENCE */}
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-            <p className="text-sm text-center text-white/50">
+            <p className="text-base text-center text-white/50">
               Experience Level
             </p>
 
-            <h2 className="mt-4 text-6xl font-bold text-purple-400">
-              Mid
+            <h2 className="mt-4 text-6xl text-center font-bold text-purple-400">
+              {experienceLevel}
             </h2>
 
             <p className="mt-4 text-center text-white/60">
@@ -123,7 +185,7 @@ export default function ResultsPage() {
           <div className="mt-8 grid gap-6 md:grid-cols-3">
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
-              <p className="text-sm text-white/50">
+              <p className="text-base text-white/50">
                 Name
               </p>
 
@@ -133,7 +195,7 @@ export default function ResultsPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
-              <p className="text-sm text-white/50">
+              <p className="text-base text-white/50">
                 Email
               </p>
 
@@ -143,7 +205,7 @@ export default function ResultsPage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-center">
-              <p className="text-sm text-white/50">
+              <p className="text-base text-white/50">
                 Location
               </p>
 
@@ -156,65 +218,183 @@ export default function ResultsPage() {
 
         </div>
         {/* SKILLS */}
-        <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        {/* EXTRACTED SKILLS */}
+          <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-          <h2 className="text-2xl text-center font-semibold">
-            Extracted Skills
-          </h2>
+            <h2 className="text-2xl text-center font-semibold">
+              Extracted Skills
+            </h2>
 
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
 
-            {skills.map((skill) => (
-              <div
-                key={skill}
-                className="
-                  rounded-full
-                  border
-                  border-green-400/20
-                  bg-green-400/5
-                  px-5
-                  py-3
-                  text-sm
-                  text-green-300
-                  transition-all
-                  duration-300
-                  hover:scale-105
-                  hover:border-green-400/50
-                "
-              >
-                {skill}
+              {skills.map((skill: string) => (
+                <div
+                  key={skill}
+                  className="
+                    rounded-full
+                    border
+                    border-green-400/20
+                    bg-green-400/5
+                    px-5
+                    py-3
+                    text-base
+                    text-green-300
+                  "
+                >
+                  {skill}
+                </div>
+              ))}
+
+            </div>
+
+          </div>
+
+          {/* MATCHED SKILLS */}
+          <div className="mt-14 w-full rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-8 backdrop-blur-xl">
+
+            <h2 className="text-2xl text-center font-semibold text-cyan-300">
+              Matched Skills
+            </h2>
+
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+
+              {matchedSkills.map((skill: string) => (
+                <div
+                  key={skill}
+                  className="
+                    rounded-full
+                    border
+                    border-cyan-400/20
+                    bg-cyan-400/5
+                    px-5
+                    py-3
+                    text-base
+                    text-cyan-300
+                  "
+                >
+                  {skill}
+                </div>
+              ))}
+
+            </div>
+
+          </div>
+
+          {/* MISSING SKILLS */}
+          <div className="mt-14 w-full rounded-3xl border border-red-500/20 bg-red-500/5 p-8 backdrop-blur-xl">
+
+            <h2 className="text-2xl text-center font-semibold text-red-300">
+              Missing Skills
+            </h2>
+
+            {missingSkills.length > 0 ? (
+
+              <div className="mt-8 flex flex-wrap justify-center gap-4">
+
+                {missingSkills.map((skill: string) => (
+                  <div
+                    key={skill}
+                    className="
+                      rounded-full
+                      border
+                      border-red-400/20
+                      bg-red-400/5
+                      px-5
+                      py-3
+                      text-base
+                      text-red-300
+                    "
+                  >
+                    {skill}
+                  </div>
+                ))}
+
               </div>
-            ))}
+
+            ) : (
+
+              <p className="mt-6 text-center text-green-300">
+                No missing skills detected.
+              </p>
+
+            )}
 
           </div>
 
-        </div>
+        {/* AI CAREER ANALYSIS */}
+          <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
-        {/* AI RECOMMENDATIONS */}
-        <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+            <h2 className="text-2xl text-center font-semibold">
+              AI Career Analysis
+            </h2>
 
-          <h2 className="text-2xl text-center font-semibold">
-            AI Recommendations
-          </h2>
+            <div className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-6">
 
-          <div className="mt-8 space-y-5">
+              <pre className="whitespace-pre-wrap text-white/80">
+                {aiRecommendations}
+              </pre>
 
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Improve ATS keywords for cloud-native engineering roles.
-            </div>
-
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Add measurable DevOps deployment metrics to experience section.
-            </div>
-
-            <div className="break-words text-center rounded-2xl border border-white/10 bg-black/20 p-5 text-white/80">
-              Highlight Kubernetes and Terraform projects more prominently.
             </div>
 
           </div>
 
+         {/* RESUME PREVIEW */}
+          <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+
+            <h2 className="text-2xl text-center font-semibold">
+              Resume Preview
+            </h2>
+
+            <p className="mt-2 text-center text-white/50">
+              First extracted text from uploaded PDF
+            </p>
+
+            <div className="mt-6 max-h-[300px] overflow-y-auto rounded-2xl border border-white/10 bg-black/30 p-6">
+
+              <pre className="whitespace-pre-wrap break-words text-base text-white/70">
+                {data?.text_preview || "No preview available"}
+              </pre>
+
+            </div>
+
+          </div>
+          {/* RESUME SECTIONS */}
+          <div className="mt-14 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+
+            <h2 className="text-2xl text-center font-semibold">
+              Resume Overview
+            </h2>
+
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+
+              <div className="rounded-2xl border text-center border-white/10 p-5">
+                <p className="text-white/50 text-base">
+                  Total Skills
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-green-400">
+                  {skills.length}
+                </p>
+              </div>
+
+              <div className="rounded-2xl text-center border border-white/10 p-5">
+                <p className="text-white/50 text-base">
+                  Experience Level
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-purple-400">
+                  {experienceLevel}
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+          <div className="mt-10 pb-10 text-center text-white/40">
+            CareerOps v1 • AI Career Intelligence Platform
+          </div>
+        
         </div>
-      </div>
       </PageContainer>
 
     </main>
