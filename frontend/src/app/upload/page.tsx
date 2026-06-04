@@ -16,7 +16,6 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
-  const [model, setModel] = useState("mistral:latest");
 
   const [jobDescription, setJobDescription] = useState("");
 
@@ -75,7 +74,6 @@ export default function UploadPage() {
 
         const data = await uploadResume(
           file,
-          model,
           jobDescription
         );
 
@@ -282,50 +280,6 @@ export default function UploadPage() {
 
             </div>
           )}
-
-
-          {/* MODEL SELECTOR */}
-          <div className="mb-8 flex justify-center gap-4">
-
-            <button
-              type="button"
-              onClick={() => setModel("mistral:latest")}
-              className={`
-                rounded-xl
-                px-6
-                py-3
-                border
-                transition-all
-                ${
-                  model === "mistral:latest"
-                    ? "bg-cyan-500 text-black border-cyan-400"
-                    : "bg-black/30 text-white border-white/20"
-                }
-              `}
-            >
-               Mistral (Smart)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setModel("phi3:mini")}
-              className={`
-                rounded-xl
-                px-6
-                py-3
-                border
-                transition-all
-                ${
-                  model === "phi3:mini"
-                    ? "bg-green-500 text-black border-green-400"
-                    : "bg-black/30 text-white border-white/20"
-                }
-              `}
-            >
-              Phi-3 Mini (Fast)
-            </button>
-
-          </div>
                 
         </div>
       </div>

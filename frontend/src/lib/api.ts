@@ -2,7 +2,6 @@ const API_BASE_URL = "http://localhost:8000";
 
 export async function uploadResume(
   file: File,
-  model: string,
   jobDescription: string
 ) {
 
@@ -10,7 +9,6 @@ export async function uploadResume(
 
   formData.append("file", file);
   formData.append("job_description", jobDescription);
-  formData.append("model", model);
 
   try {
 

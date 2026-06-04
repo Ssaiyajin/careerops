@@ -13,7 +13,7 @@ from app.services.semantic_matcher import semantic_job_match
 from app.services.name_extractor import extract_name
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.skill_extractor import extract_skills
-from app.services.llm_analyzer import generate_ai_recommendations
+from app.services.gemini_analyzer import generate_gemini_recommendations
 
 router = APIRouter()
 
@@ -35,7 +35,6 @@ target_job_skills = [
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    model: str = Form(...),
     job_description: str = Form(...)
 ):
 
@@ -97,11 +96,21 @@ async def upload_resume(
         ):
             missing_skills.append(skill)
 
+    try:
 
-    ai_recommendations = generate_ai_recommendations(
-    extracted_text,
-    model
-    )
+         ai_recommendations = (
+        generate_gemini_recommendations(
+            extracted_text
+                )
+        )
+
+    except Exception as e:
+
+        print("GEMINI ERROR:", e)
+
+        ai_recommendations = (
+            "AI analysis currently unavailable."
+        )
 
     return {
     "message": "Resume processed successfully",
