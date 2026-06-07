@@ -14,6 +14,9 @@ from app.services.name_extractor import extract_name
 from app.services.pdf_parser import extract_text_from_pdf
 from app.services.skill_extractor import extract_skills
 from app.services.gemini_analyzer import generate_gemini_recommendations
+from app.database.database_service import save_resume_analysis
+
+
 
 router = APIRouter()
 
@@ -111,6 +114,22 @@ async def upload_resume(
         ai_recommendations = (
             "AI analysis currently unavailable."
         )
+    print("ATS DATA:", ats_data)
+    print("JOB MATCH:", job_match_data)
+    # Save analysis to database
+    saved = save_resume_analysis(
+        candidate_name=candidate_name,
+        email=entities.get("emails", [""])[0]
+        if entities.get("emails")
+        else "",
+        ats_score=ats_data["ats_score"],
+        match_score=job_match_data["match_score"],
+        experience_level=experience_level,
+        resume_text=extracted_text
+        )
+
+    print("DATABASE SAVE:", saved.id)
+
 
     return {
     "message": "Resume processed successfully",

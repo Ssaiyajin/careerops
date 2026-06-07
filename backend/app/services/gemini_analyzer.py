@@ -1,4 +1,5 @@
 import os
+import time
 
 from google import genai
 from dotenv import load_dotenv
@@ -8,6 +9,32 @@ load_dotenv()
 client = genai.Client(
     api_key=os.getenv("GEMINI_API_KEY")
 )
+
+
+def ask_gemini(prompt: str):
+
+    for attempt in range(3):
+
+        try:
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+
+            return response.text
+
+        except Exception as e:
+
+            print(
+                f"Gemini attempt {attempt + 1} failed:",
+                e
+            )
+
+            time.sleep(2)
+
+    return "Gemini temporarily unavailable."
+
 
 def generate_gemini_recommendations(text: str):
 
@@ -24,9 +51,4 @@ Resume:
 {text}
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-
-    return response.text
+    return ask_gemini(prompt)
