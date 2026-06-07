@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.resume import router as resume_router
+from app.api.history import router as history_router
 
 app = FastAPI()
 
@@ -35,4 +36,10 @@ app.include_router(
     resume_router,
     prefix="/api/resume",
     tags=["Resume"]
+)
+
+# History routes
+app.include_router(
+    history_router,
+    prefix="/api"
 )
