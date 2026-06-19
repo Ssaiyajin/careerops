@@ -38,3 +38,12 @@ export async function uploadResume(
     throw error;
   }
 }
+
+export async function getHistory() {
+
+  const response = await fetch(
+    "http://127.0.0.1:8000/api/history"
+  );
+
+  return response.json();
+}

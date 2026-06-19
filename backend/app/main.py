@@ -7,6 +7,7 @@ from app.api.history import router as history_router
 from app.api.rewrite import  router as rewrite_router
 from app.api.test import router as test_router
 from app.api.debug import router as debug_router
+from app.api.coverletter import router as cover_letter_router
 
 app = FastAPI()
 
@@ -57,3 +58,9 @@ app.include_router(
 app.include_router(test_router)
 
 app.include_router(debug_router)
+
+
+app.include_router(
+    cover_letter_router,
+    prefix="/api"
+)

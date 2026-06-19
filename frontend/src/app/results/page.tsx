@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 
 export default function ResultsPage() {
   const [data, setData] = useState<any>(null);
-
+  
     useEffect(() => {
       const storedData = getResumeData();
       setData(storedData);
@@ -48,7 +48,99 @@ export default function ResultsPage() {
 
   const textPreview =
     data?.text_preview || "";
+
+  const [rewriting, setRewriting] = useState(false);
+  const [rewrite, setRewrite] = useState("");
+
+  const [loadingCoverLetter, setLoadingCoverLetter] =
+    useState(false);
+
+  const [coverLetter, setCoverLetter] =
+    useState("");
+
+  const handleRewrite = async () => {
+
+    try {
+
+      setRewriting(true);
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/rewrite-from-text",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            resume_text: textPreview
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      setRewrite(
+        result.rewrite || "No rewrite generated."
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      setRewrite(
+        "Failed to generate resume rewrite."
+      );
+
+    } finally {
+
+      setRewriting(false);
+
+    }
+  };
+
+  const handleCoverLetter = async () => {
+
+    try {
+
+      setLoadingCoverLetter(true);
+
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/cover-letter-from-text",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            resume_text: textPreview,
+            job_description: "paste job description here"
+          })
+        }
+      );
+      const result = await response.json();
+
+      setCoverLetter(
+        result.cover_letter ||
+        "No cover letter generated."
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      setCoverLetter(
+        "Failed to generate cover letter."
+      );
+
+    } finally {
+
+      setLoadingCoverLetter(false);
+
+    }
+  };
     
+
+
     if (!data) {
       return (
         <main className="flex min-h-screen items-center justify-center bg-black text-white">
@@ -390,11 +482,94 @@ export default function ResultsPage() {
             </div>
 
           </div>
+          {/* REWRITE RESUME */}
+          <div className="mt-10 flex justify-center gap-6">
+
+            <button
+              onClick={handleRewrite}
+              disabled={rewriting}
+              className="
+                rounded-full
+                bg-gradient-to-r
+                from-green-500
+                to-emerald-600
+                px-8
+                py-4
+                text-white
+                font-semibold
+              "
+            >
+              {rewriting
+                ? "AI Rewriting Resume..."
+                : "Generate Improved Resume"}
+            </button>
+
+            <button
+              onClick={handleCoverLetter}
+              className="
+                rounded-full
+                bg-gradient-to-r
+                from-cyan-500
+                to-blue-600
+                px-8
+                py-4
+                text-white
+                font-semibold
+              "
+            >
+              Generate Cover Letter
+            </button>
+
+          </div>
+
+          {/* AI REWRITTEN RESUME */}
+          {rewrite && (
+
+            <div className="mt-14 w-full rounded-3xl border border-green-500/20 bg-green-500/5 p-8 backdrop-blur-xl">
+
+              <h2 className="text-2xl text-center font-semibold text-green-300">
+                AI Improved Resume
+              </h2>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-6">
+
+                <pre className="whitespace-pre-wrap text-white/80">
+                  {rewrite}
+                </pre>
+
+              </div>
+
+            </div>
+
+          )}
+
+          {/* AI COVER LETTER */}
+          {coverLetter && (
+
+            <div className="mt-14 w-full rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-8 backdrop-blur-xl">
+
+              <h2 className="text-2xl text-center font-semibold text-cyan-300">
+                Generated Cover Letter
+              </h2>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-6">
+
+                <pre className="whitespace-pre-wrap text-white/80">
+                  {coverLetter}
+                </pre>
+
+              </div>
+
+            </div>
+
+          )}
+
+        </div>
           <div className="mt-10 pb-10 text-center text-white/40">
             CareerOps v1 • AI Career Intelligence Platform
           </div>
         
-        </div>
+        
       </PageContainer>
 
     </main>
