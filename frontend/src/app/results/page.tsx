@@ -49,6 +49,9 @@ export default function ResultsPage() {
   const textPreview =
     data?.text_preview || "";
 
+  const jobDescription =
+    data?.job_description || "";
+
   const [rewriting, setRewriting] = useState(false);
   const [rewrite, setRewrite] = useState("");
 
@@ -58,7 +61,25 @@ export default function ResultsPage() {
   const [coverLetter, setCoverLetter] =
     useState("");
 
+  const [rewriteProgress, setRewriteProgress] = useState(0);
+
+  const [coverLetterProgress, setCoverLetterProgress] =
+    useState(0);
+
   const handleRewrite = async () => {
+    setRewriteProgress(0);
+
+    const interval = setInterval(() => {
+
+      setRewriteProgress((prev) => {
+
+        if (prev >= 90) return prev;
+
+        return prev + 5;
+
+      });
+
+    }, 200);
 
     try {
 
@@ -78,7 +99,8 @@ export default function ResultsPage() {
       );
 
       const result = await response.json();
-
+      setRewriteProgress(100);
+      clearInterval(interval);
       setRewrite(
         result.rewrite || "No rewrite generated."
       );
@@ -90,7 +112,7 @@ export default function ResultsPage() {
       setRewrite(
         "Failed to generate resume rewrite."
       );
-
+      clearInterval(interval);
     } finally {
 
       setRewriting(false);
@@ -99,7 +121,19 @@ export default function ResultsPage() {
   };
 
   const handleCoverLetter = async () => {
+    setCoverLetterProgress(0);
 
+    const interval = setInterval(() => {
+
+      setCoverLetterProgress((prev) => {
+
+        if (prev >= 90) return prev;
+
+        return prev + 5;
+
+      });
+
+    }, 200);
     try {
 
       setLoadingCoverLetter(true);
@@ -113,12 +147,13 @@ export default function ResultsPage() {
           },
           body: JSON.stringify({
             resume_text: textPreview,
-            job_description: "paste job description here"
+            job_description: jobDescription
           })
         }
       );
       const result = await response.json();
-
+      setCoverLetterProgress(100);
+      clearInterval(interval);
       setCoverLetter(
         result.cover_letter ||
         "No cover letter generated."
@@ -131,7 +166,7 @@ export default function ResultsPage() {
       setCoverLetter(
         "Failed to generate cover letter."
       );
-
+      clearInterval(interval);
     } finally {
 
       setLoadingCoverLetter(false);
@@ -140,14 +175,60 @@ export default function ResultsPage() {
   };
     
 
+  const downloadResume = () => {
 
-    if (!data) {
-      return (
-        <main className="flex min-h-screen items-center justify-center bg-black text-white">
-          Loading...
-        </main>
-      );
-    }
+    const blob = new Blob(
+      [rewrite],
+      { type: "text/plain;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "CareerOps_Improved_Resume.txt";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadCoverLetter = () => {
+
+    const blob = new Blob(
+      [coverLetter],
+      { type: "text/plain;charset=utf-8" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "CareerOps_Cover_Letter.txt";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
+
+  if (!data) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-black text-white">
+        Loading...
+      </main>
+    );
+  }
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
@@ -172,7 +253,6 @@ export default function ResultsPage() {
           </p>
 
         </div>
-
         {/* DASHBOARD */}
         <div className="mt-16 grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
 
@@ -183,7 +263,15 @@ export default function ResultsPage() {
               ATS Compatibility
             </p>
 
-            <h2 className="mt-4 text-6xl text-center font-bold text-green-400">
+            <h2
+              className={`mt-4 text-6xl text-center font-bold ${
+                atsScore >= 90
+                  ? "text-green-400"
+                  : atsScore >= 70
+                  ? "text-cyan-400"
+                  : "text-orange-400"
+              }`}
+            >
               {atsScore}%
             </h2>
 
@@ -304,6 +392,39 @@ export default function ResultsPage() {
               <p className="mt-2 text-lg text-white">
                 {candidateLocation}
               </p>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div className="mt-10 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+
+          <h2 className="text-2xl text-center font-semibold">
+            Analysis Pipeline
+          </h2>
+
+          <div className="mt-8 grid md:grid-cols-5 gap-4">
+
+            <div className="rounded-xl bg-green-500/10 p-4 text-center">
+              ✓ Resume Parsed
+            </div>
+
+            <div className="rounded-xl bg-green-500/10 p-4 text-center">
+              ✓ Skills Extracted
+            </div>
+
+            <div className="rounded-xl bg-green-500/10 p-4 text-center">
+              ✓ ATS Scored
+            </div>
+
+            <div className="rounded-xl bg-green-500/10 p-4 text-center">
+              ✓ Job Match
+            </div>
+
+            <div className="rounded-xl bg-green-500/10 p-4 text-center">
+              ✓ AI Analysis
             </div>
 
           </div>
@@ -497,15 +618,20 @@ export default function ResultsPage() {
                 py-4
                 text-white
                 font-semibold
+                transition-all
+                hover:scale-105
+                disabled:opacity-60
+                disabled:cursor-not-allowed
               "
             >
               {rewriting
-                ? "AI Rewriting Resume..."
+                ? `Generating Resume... ${rewriteProgress}%`
                 : "Generate Improved Resume"}
             </button>
 
             <button
               onClick={handleCoverLetter}
+              disabled={loadingCoverLetter}
               className="
                 rounded-full
                 bg-gradient-to-r
@@ -515,15 +641,115 @@ export default function ResultsPage() {
                 py-4
                 text-white
                 font-semibold
+                transition-all
+                hover:scale-105
+                disabled:opacity-60
+                disabled:cursor-not-allowed
               "
             >
-              Generate Cover Letter
+              {loadingCoverLetter
+                ? `Generating Cover Letter... ${coverLetterProgress}%`
+                : "Generate Cover Letter"}
             </button>
 
           </div>
 
           {/* AI REWRITTEN RESUME */}
-          {rewrite && (
+          {rewriting && (
+
+            <div className="
+              mt-10
+              w-full
+              rounded-3xl
+              border
+              border-green-500/20
+              bg-green-500/5
+              p-8
+            ">
+
+              
+              <div className="mt-6 flex justify-center">
+
+                <div
+                  className="
+                    h-12
+                    w-12
+                    animate-spin
+                    rounded-full
+                    border-4
+                    border-green-500
+                    border-t-transparent
+                  "
+                />
+
+              </div>
+
+              <p className="mt-4 text-center text-white/70">
+                Optimizing Resume...
+              </p>
+
+              <div className="mt-6 h-3 rounded-full bg-white/10">
+
+                <div
+                  className="
+                    h-full
+                    rounded-full
+                    bg-gradient-to-r
+                    from-green-400
+                    to-emerald-500
+                    transition-all
+                    duration-300
+                  "
+                  style={{
+                    width: `${rewriteProgress}%`
+                  }}
+                />
+
+              </div>
+
+              <p className="mt-3 text-center text-green-300">
+                {rewriteProgress}%
+              </p>
+
+            </div>
+
+          )}
+          {rewriting ? (
+
+            <div className="mt-14 w-full rounded-3xl border border-green-500/20 bg-green-500/5 p-8 backdrop-blur-xl">
+
+              <h2 className="text-2xl text-center font-semibold text-green-300">
+                AI Improving Resume
+              </h2>
+
+              <div className="mt-8 flex flex-col items-center">
+
+                <div className="h-16 w-16 animate-spin rounded-full border-4 border-green-500/20 border-t-green-400" />
+
+                <p className="mt-6 text-green-300">
+                  Optimizing ATS Score...
+                </p>
+
+                <div className="mt-6 h-4 w-full rounded-full bg-white/10 overflow-hidden">
+
+                  <div
+                    className="h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-300"
+                    style={{
+                      width: `${rewriteProgress}%`
+                    }}
+                  />
+
+                </div>
+
+                <p className="mt-3 text-green-300">
+                  {rewriteProgress}%
+                </p>
+
+              </div>
+
+            </div>
+
+          ) : rewrite && (
 
             <div className="mt-14 w-full rounded-3xl border border-green-500/20 bg-green-500/5 p-8 backdrop-blur-xl">
 
@@ -542,9 +768,122 @@ export default function ResultsPage() {
             </div>
 
           )}
+          {rewrite && (
 
+            <button
+              onClick={downloadResume}
+              className="
+                mt-6
+                rounded-full
+                bg-green-500
+                px-6
+                py-3
+                font-semibold
+                text-white
+                transition-all
+                hover:scale-105
+              "
+            >
+              Download Resume
+            </button>
+
+          )}
           {/* AI COVER LETTER */}
-          {coverLetter && (
+          {loadingCoverLetter && (
+
+            <div className="
+              mt-10
+              w-full
+              rounded-3xl
+              border
+              border-cyan-500/20
+              bg-cyan-500/5
+              p-8
+            ">
+
+              
+              <div className="mt-6 flex justify-center">
+
+                <div
+                  className="
+                    h-12
+                    w-12
+                    animate-spin
+                    rounded-full
+                    border-4
+                    border-cyan-500
+                    border-t-transparent
+                  "
+                />
+
+              </div>
+
+              <p className="mt-4 text-center text-white/70">
+                Writing Cover Letter...
+              </p>
+
+              <div className="mt-6 h-3 rounded-full bg-white/10">
+
+                <div
+                  className="
+                    h-full
+                    rounded-full
+                    bg-gradient-to-r
+                    from-cyan-400
+                    to-blue-500
+                    transition-all
+                    duration-300
+                  "
+                  style={{
+                    width: `${coverLetterProgress}%`
+                  }}
+                />
+
+              </div>
+
+              <p className="mt-3 text-center text-cyan-300">
+                {coverLetterProgress}%
+              </p>
+
+            </div>
+
+          )}
+          {loadingCoverLetter ? (
+
+            <div className="mt-14 w-full rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-8 backdrop-blur-xl">
+
+              <h2 className="text-2xl text-center font-semibold text-cyan-300">
+                AI Generating Cover Letter
+              </h2>
+
+              <div className="mt-8 flex flex-col items-center">
+
+                <div className="h-16 w-16 animate-spin rounded-full border-4 border-cyan-500/20 border-t-cyan-400" />
+
+                <p className="mt-6 text-cyan-300">
+                  Writing Personalized Cover Letter...
+                </p>
+
+                <div className="mt-6 h-4 w-full rounded-full bg-white/10 overflow-hidden">
+
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300"
+                    style={{
+                      width: `${coverLetterProgress}%`
+                    }}
+                  />
+
+                </div>
+
+                <p className="mt-3 text-cyan-300">
+                  {coverLetterProgress}%
+                </p>
+
+              </div>
+
+            </div>
+
+          ) : coverLetter && (
 
             <div className="mt-14 w-full rounded-3xl border border-cyan-500/20 bg-cyan-500/5 p-8 backdrop-blur-xl">
 
@@ -564,9 +903,29 @@ export default function ResultsPage() {
 
           )}
 
+          {coverLetter && (
+
+            <button
+              onClick={downloadCoverLetter}
+              className="
+                mt-6
+                rounded-full
+                bg-cyan-500
+                px-6
+                py-3
+                font-semibold
+                text-white
+                transition-all
+                hover:scale-105
+              "
+            >
+              Download Cover Letter
+            </button>
+
+          )}
         </div>
           <div className="mt-10 pb-10 text-center text-white/40">
-            CareerOps v1 • AI Career Intelligence Platform
+            CareerOps v2 • AI Career Intelligence Platform
           </div>
         
         
