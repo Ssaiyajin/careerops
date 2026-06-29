@@ -128,11 +128,13 @@ npm run dev
 
 ## V2
 
-- Groq Integration
+- Gemini Integration
 - OpenRouter Support
 - PostgreSQL Database
 - User Authentication
 - Resume History
+- Resume Rewrite
+- Cover Letter Generation
 
 ## V3
 

@@ -2,7 +2,6 @@ import shutil
 
 from fastapi import APIRouter, UploadFile, File, Form
 from pathlib import Path
-from fastapi import Form
 from app.services.nlp_processor import process_text
 from app.services.entity_extractor import extract_entities
 from app.services.ats_scorer import calculate_ats_score
@@ -15,6 +14,8 @@ from app.services.pdf_parser import extract_text_from_pdf
 from app.services.skill_extractor import extract_skills
 from app.services.gemini_analyzer import generate_gemini_recommendations
 from app.database.database_service import save_resume_analysis
+from app.services.ats_advisor import generate_ats_advice
+from app.services.resume_rewriter import rewrite_resume
 
 
 
@@ -69,6 +70,12 @@ async def upload_resume(
     entities,
     extracted_text
     )
+
+    ats_advice = generate_ats_advice(
+    skills,
+    ats_data,
+    extracted_text
+)
     
     experience_level = classify_experience(
     extracted_text
@@ -88,17 +95,14 @@ async def upload_resume(
     extracted_text,
     job_description
     )
-    missing_skills = []
 
-    job_words = job_description.lower().split()
-
-    for skill in target_job_skills:
-        if (
-            skill.lower() in job_words
-            and skill not in skills
-        ):
-            missing_skills.append(skill)
-
+    rewritten_resume = rewrite_resume(
+    extracted_text,
+    skills,
+    sections,
+    experience_level,
+    ats_advice
+)
     try:
 
          ai_recommendations = (
@@ -136,7 +140,7 @@ async def upload_resume(
     "candidate_name": candidate_name,
     "filename": file.filename,
     "skills": skills,
-    "missing_skills": missing_skills,
+    "missing_skills":job_match_data["missing_skills"],
     "entities": entities,
     "token_preview": tokens[:50],
     "text_preview": extracted_text[:1000],
@@ -145,5 +149,7 @@ async def upload_resume(
     "sections": sections,
     "job_match": job_match_data,
     "semantic_match": semantic_match_data,
-    "ai_recommendations": ai_recommendations
+    "ai_recommendations": ai_recommendations,
+    "ats_advice": ats_advice,
+    "rewritten_resume": rewritten_resume
     }

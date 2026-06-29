@@ -46,6 +46,9 @@ export default function ResultsPage() {
   const aiRecommendations =
     data?.ai_recommendations || "";
 
+  const atsAdvice =
+    data?.ats_advice || {};
+
   const textPreview =
     data?.text_preview || "";
 
@@ -197,6 +200,61 @@ export default function ResultsPage() {
 
     URL.revokeObjectURL(url);
   };
+
+  const downloadResumeDocx = async () => {
+
+    const response = await fetch(
+      "http://127.0.0.1:8000/api/export-resume",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+
+          candidate_name:
+            candidateName,
+
+          email:
+            candidateEmail,
+
+          location:
+            candidateLocation,
+
+          skills:
+            skills,
+
+          resume_text:
+            rewrite
+
+        })
+      }
+    );
+
+    const blob =
+      await response.blob();
+
+    const url =
+      window.URL.createObjectURL(
+        blob
+      );
+
+    const a =
+      document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+      "CareerOps_Resume.docx";
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+  };
+
 
   const downloadCoverLetter = () => {
 
@@ -355,6 +413,68 @@ export default function ResultsPage() {
 
         </div>
 
+        {/* ATS ADVISOR */}
+        <div className="mt-14 w-full rounded-3xl border border-orange-500/20 bg-orange-500/5 p-8 backdrop-blur-xl">
+
+          <h2 className="text-2xl text-center font-semibold text-orange-300">
+            ATS Advisor
+          </h2>
+
+          <div className="mt-8 grid md:grid-cols-2 gap-8">
+
+            <div>
+              <h3 className="mb-4 text-lg font-semibold text-red-300">
+                Missing Keywords
+              </h3>
+
+              <div className="flex flex-wrap gap-3">
+
+                {(atsAdvice.missing_keywords || []).map(
+                  (keyword: string) => (
+                    <span
+                      key={keyword}
+                      className="
+                        rounded-full
+                        border
+                        border-red-500/20
+                        bg-red-500/10
+                        px-4
+                        py-2
+                        text-red-300
+                      "
+                    >
+                      {keyword}
+                    </span>
+                  )
+                )}
+
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-4 text-lg font-semibold text-yellow-300">
+                Recommendations
+              </h3>
+
+              <ul className="space-y-3">
+
+                {(atsAdvice.recommendations || []).map(
+                  (rec: string, index: number) => (
+                    <li
+                      key={index}
+                      className="text-white/80"
+                    >
+                      • {rec}
+                    </li>
+                  )
+                )}
+
+              </ul>
+            </div>
+
+          </div>
+
+        </div>
         {/* USER INFO */}
         <div className="mt-10 w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
 
@@ -771,7 +891,7 @@ export default function ResultsPage() {
           {rewrite && (
 
             <button
-              onClick={downloadResume}
+              onClick={downloadResumeDocx}
               className="
                 mt-6
                 rounded-full
@@ -784,10 +904,11 @@ export default function ResultsPage() {
                 hover:scale-105
               "
             >
-              Download Resume
+              Download DOCX Resume
             </button>
 
           )}
+          
           {/* AI COVER LETTER */}
           {loadingCoverLetter && (
 

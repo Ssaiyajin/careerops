@@ -8,7 +8,7 @@ from app.api.rewrite import  router as rewrite_router
 from app.api.test import router as test_router
 from app.api.debug import router as debug_router
 from app.api.coverletter import router as cover_letter_router
-
+from app.api.export import router as export_router
 
 
 app = FastAPI()
@@ -64,5 +64,10 @@ app.include_router(debug_router)
 
 app.include_router(
     cover_letter_router,
+    prefix="/api"
+)
+
+app.include_router(
+    export_router,
     prefix="/api"
 )
