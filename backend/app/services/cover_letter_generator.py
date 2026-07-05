@@ -7,6 +7,20 @@ def generate_cover_letter(
 
     prompt = f"""
     You are a professional hiring manager.
+    IMPORTANT:
+
+        This cover letter will be submitted digitally.
+
+        Do NOT include:
+
+        - Company address
+        - Company postal information
+        - Candidate postal address
+        - Date header
+
+        Start directly with:
+
+        Dear Hiring Manager,
 
     Write a personalized cover letter.
 
@@ -19,7 +33,22 @@ def generate_cover_letter(
     - Mention relevant projects.
     - Mention relevant technical skills.
     - Include enthusiasm for the role.
+    IMPORTANT:
 
+    Write in FIRST PERSON.
+
+    Use:
+    - I
+    - My
+    - Me
+
+    Never use:
+    - The candidate
+    - Mr. Sawant
+    - Nihar Sawant's resume
+    - This applicant
+
+    This is a cover letter written by the candidate.
     Resume:
     {resume_text}
 

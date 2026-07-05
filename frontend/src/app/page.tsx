@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { isLoggedIn } from "@/lib/auth/token"; // correct path
 
 export default function HomePage() {
+const router = useRouter();
   return (
     <main className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-black text-white">
 
@@ -30,7 +35,7 @@ export default function HomePage() {
             AI
           </span>
         </h1>
-
+        
         {/* Subtitle */}
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/60 sm:text-xl">
           Analyze resumes, discover skill gaps, and generate your
@@ -40,7 +45,7 @@ export default function HomePage() {
         {/* BUTTON */}
        <div className="mt-12 flex justify-center">
         <Link
-          href="/upload"
+          href={isLoggedIn() ? "/upload" : "/login"}
           className="
             group
             inline-flex

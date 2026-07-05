@@ -17,7 +17,11 @@ async def rewrite_resume_endpoint(
     try:
 
         rewritten_content = rewrite_resume(
-            request.resume_text
+            request.resume_text,
+            skills=[],
+            sections={},
+            experience_level="Mid-level",
+            ats_advice={}
         )
 
     except Exception as e:
