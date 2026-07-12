@@ -25,6 +25,46 @@ def rewrite_resume(
         - No code fences.
         - No bullet symbols other than standard resume bullets.
         - No placeholders.
+        
+        IMPORTANT LENGTH RULES:
+
+        - HARD LIMIT: 450 words maximum.
+        - HARD LIMIT: 1 page maximum.
+        - Maximum 3 bullets per job.
+        - Maximum 2 bullets per project.
+        - Professional Summary maximum 3 lines.
+        - Keep only the strongest projects.
+        - Remove duplicate technologies.
+        - Remove weak academic descriptions.
+        - Remove filler words.
+        - Prefer concise recruiter-style wording.
+        If content exceeds one page,
+        remove less important information until it fits.
+        
+        If content exceeds one page:
+
+        - prioritize recent experience
+        - prioritize DevOps projects
+        - prioritize cloud projects
+        - compress older experience
+        - remove weak bullet points
+        OUTPUT STYLE:
+
+        - Modern ATS-friendly resume.
+        - Compact spacing.
+        - Recruiter-friendly formatting.
+        - Designed to fit on a single page.
+
+        RECRUITER RULES:
+
+        - Target German and international tech companies.
+        - Prioritize AWS, Terraform, Kubernetes, Docker, Python, CI/CD and Cloud Engineering experience.
+        - Remove weak academic descriptions.
+        - Focus on measurable achievements.
+        - Keep resume between 450 and 600 words.
+        - Use concise bullet points.
+        - Avoid long paragraphs.
+        - Prefer business impact over technical explanations.
 
         PRESERVE:
 
@@ -94,6 +134,8 @@ def rewrite_resume(
         CERTIFICATIONS
 
         LANGUAGES
-        """
 
+        
+    """
+    
     return ask_gemini(prompt)

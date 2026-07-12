@@ -9,7 +9,7 @@ from app.api.test import router as test_router
 from app.api.debug import router as debug_router
 from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
-
+from app.api.auth import router as auth_router
 
 app = FastAPI()
 
@@ -70,4 +70,10 @@ app.include_router(
 app.include_router(
     export_router,
     prefix="/api"
+)
+
+app.include_router(
+    auth_router,
+    prefix="/api/auth",
+    tags=["Authentication"]
 )

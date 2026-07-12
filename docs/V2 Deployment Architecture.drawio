@@ -1,0 +1,48 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="ikSI6ZutuqTmyHn1PX5U">
+    <mxGraphModel dx="685" dy="368" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="eg4vHEdexzl75cIlPsFG-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="550" width="450" x="200" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-7" edge="1" parent="1" source="eg4vHEdexzl75cIlPsFG-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="eg4vHEdexzl75cIlPsFG-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Internet" vertex="1">
+          <mxGeometry height="30" width="60" x="390" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-8" edge="1" parent="1" source="eg4vHEdexzl75cIlPsFG-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="eg4vHEdexzl75cIlPsFG-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Vercel&lt;br&gt;&amp;nbsp;Next.js Frontend&amp;nbsp;&amp;nbsp;" vertex="1">
+          <mxGeometry height="60" width="120" x="360" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-9" edge="1" parent="1" source="eg4vHEdexzl75cIlPsFG-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eg4vHEdexzl75cIlPsFG-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="420" y="550" />
+              <mxPoint x="290" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-11" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="eg4vHEdexzl75cIlPsFG-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="550" as="sourcePoint" />
+            <mxPoint x="540" y="625" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Render&lt;div&gt;FastAPI Backend&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="360" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="PostgreSQL DB" vertex="1">
+          <mxGeometry height="60" width="120" x="230" y="585" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4vHEdexzl75cIlPsFG-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Gemini API&amp;nbsp;" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="585" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

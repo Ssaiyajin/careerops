@@ -16,7 +16,6 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
-# Next.js cache
 .vercel
 
 ############################
@@ -42,6 +41,23 @@ htmlcov/
 
 .mypy_cache/
 .ruff_cache/
+
+############################
+# CareerOps Generated Files
+############################
+
+uploads/
+exports/
+
+*.pdf
+*.docx
+
+############################
+# SQLite
+############################
+
+*.db
+*.sqlite3
 
 ############################
 # OS / IDE

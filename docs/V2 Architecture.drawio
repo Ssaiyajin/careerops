@@ -1,0 +1,57 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="MQS-zn6gsCm-Uy_PNCG0" name="Page-1">
+    <mxGraphModel dx="2054" dy="1103" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="1070" width="730" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-9" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hvqPcb_CsfHPQh9UTpVL-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&amp;nbsp;User Browser&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;" vertex="1">
+          <mxGeometry height="70" width="255" x="277.5" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-10" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hvqPcb_CsfHPQh9UTpVL-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-15" connectable="0" parent="hvqPcb_CsfHPQh9UTpVL-10" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="HTTPS" vertex="1">
+          <mxGeometry relative="1" x="-0.3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Vercel Frontend&amp;nbsp;&amp;nbsp;" vertex="1">
+          <mxGeometry height="70" width="255" x="277.5" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-11" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hvqPcb_CsfHPQh9UTpVL-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-12" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="hvqPcb_CsfHPQh9UTpVL-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Render Backend&amp;nbsp;&lt;div&gt;FastAPI&amp;nbsp;&amp;nbsp;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="255" x="277.5" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-13" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hvqPcb_CsfHPQh9UTpVL-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&amp;nbsp;PostgreSQL" vertex="1">
+          <mxGeometry height="70" width="255" x="100" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-14" edge="1" parent="1" source="hvqPcb_CsfHPQh9UTpVL-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="hvqPcb_CsfHPQh9UTpVL-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Gemini API" vertex="1">
+          <mxGeometry height="70" width="255" x="470" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Resume Storage" vertex="1">
+          <mxGeometry height="70" width="255" x="100" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="hvqPcb_CsfHPQh9UTpVL-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="AI Analysis" vertex="1">
+          <mxGeometry height="70" width="255" x="470" y="730" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
