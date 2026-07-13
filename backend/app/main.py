@@ -12,7 +12,7 @@ from app.api.export import router as export_router
 from app.api.auth import router as auth_router
 print("CAREEROPS BACKEND STARTING")
 app = FastAPI()
-
+print("FASTAPI CREATED")
 
 # CORS
 app.add_middleware(
