@@ -77,3 +77,5 @@ app.include_router(
     prefix="/api/auth",
     tags=["Authentication"]
 )
+
+print("CAREEROPS STARTING...")
