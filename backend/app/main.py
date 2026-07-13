@@ -10,7 +10,7 @@ from app.api.debug import router as debug_router
 from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
 from app.api.auth import router as auth_router
-
+print("CAREEROPS BACKEND STARTING")
 app = FastAPI()
 
 
@@ -78,4 +78,3 @@ app.include_router(
     tags=["Authentication"]
 )
 
-print("CAREEROPS STARTING...")
