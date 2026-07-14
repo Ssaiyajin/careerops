@@ -1,24 +1,25 @@
 import os
 import time
 
-from google import genai
-from dotenv import load_dotenv
-
-load_dotenv()
-
 client = None
+
 
 def get_client():
     global client
 
     if client is None:
+        from google import genai
+
         client = genai.Client(
             api_key=os.getenv("GEMINI_API_KEY")
         )
 
     return client
 
+
 def ask_gemini(prompt: str):
+
+    client = get_client()
 
     for attempt in range(3):
 
@@ -41,7 +42,6 @@ def ask_gemini(prompt: str):
             time.sleep(2)
 
     return "Gemini temporarily unavailable."
-
 
 def generate_gemini_recommendations(text: str):
 
