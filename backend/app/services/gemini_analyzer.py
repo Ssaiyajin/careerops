@@ -6,10 +6,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
+client = None
 
+def get_client():
+    global client
+
+    if client is None:
+        client = genai.Client(
+            api_key=os.getenv("GEMINI_API_KEY")
+        )
+
+    return client
 
 def ask_gemini(prompt: str):
 

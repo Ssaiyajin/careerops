@@ -1,7 +1,5 @@
 import re
-import spacy
-
-nlp = spacy.load("en_core_web_sm")
+from app.core.nlp import nlp
 
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"

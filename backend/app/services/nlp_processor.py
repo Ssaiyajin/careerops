@@ -1,7 +1,4 @@
-import spacy
-
-# Load English NLP model
-nlp = spacy.load("en_core_web_sm")
+from app.core.nlp import nlp
 
 
 def process_text(text: str):
