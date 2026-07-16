@@ -19,8 +19,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:3001",
+        "https://careerops-njfij4iz3-saiyan.vercel.app",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,6 +40,13 @@ def health_check():
     return {
         "status": "healthy"
     }
+
+
+@app.get("/favicon.ico")
+def favicon():
+    """Return 204 No Content for favicon requests to prevent 404 errors"""
+    from fastapi import Response
+    return Response(status_code=204)
 
 
 # Resume routes
