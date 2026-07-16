@@ -4,15 +4,24 @@ from sklearn.metrics.pairwise import cosine_similarity
 model = None
 
 
+def semantic_enabled() -> bool:
+    return os.getenv("ENABLE_SEMANTIC_MATCHING", "false").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
 def get_model():
     global model
 
     if model is None:
-        from sentence_transformers import SentenceTransformer
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            return None
 
-        model = SentenceTransformer(
-            "all-MiniLM-L6-v2"
-        )
+        model = SentenceTransformer("all-MiniLM-L6-v2")
 
     return model
 
@@ -21,17 +30,16 @@ def semantic_job_match(
     resume_text,
     job_description
 ):
-    enabled = os.getenv(
-        "ENABLE_SEMANTIC_MATCHING",
-        "true"
-    ).lower() == "true"
-
-    if not enabled:
+    if not semantic_enabled():
         return {
             "semantic_match_score": None
         }
 
     model = get_model()
+    if model is None:
+        return {
+            "semantic_match_score": None
+        }
 
     resume_embedding = model.encode(
         [resume_text]

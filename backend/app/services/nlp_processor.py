@@ -1,7 +1,33 @@
-from app.core.nlp import nlp
+import re
+from app.core.nlp import get_nlp
+
+STOPWORDS = {
+    "a",
+    "an",
+    "and",
+    "the",
+    "is",
+    "in",
+    "to",
+    "of",
+    "for",
+    "with",
+    "on",
+    "by",
+    "that",
+    "this",
+    "it",
+    "as",
+}
 
 
 def process_text(text: str):
+
+    nlp = get_nlp()
+
+    if nlp is None:
+        tokens = re.findall(r"\b\w+\b", text)
+        return [token for token in tokens if token.lower() not in STOPWORDS]
 
     doc = nlp(text)
 
