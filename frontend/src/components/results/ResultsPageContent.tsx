@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-const [progress, setProgress] = useState<number>(0);
+
 type DataShape = Record<string, any>;
 
 type ProgressPanelProps = {
@@ -177,14 +177,14 @@ export default function ResultsPageContent() {
     endpoint: string;
     payload: DataShape;
     setLoading: (value: boolean) => void;
-    setProgress: (value: number) => void;
+    setProgress: (value: number | ((prev: number) => number)) => void;
     setOutput: (value: string) => void;
     fallbackMessage: string;
     outputKey: string;
   }) => {
     setProgress(0);
     const interval = window.setInterval(() => {
-      setProgress((prev) => (prev >= 90 ? prev : prev + 5));
+      setProgress((prev: number) => (prev >= 90 ? prev : prev + 5));
     }, 200);
 
     try {
