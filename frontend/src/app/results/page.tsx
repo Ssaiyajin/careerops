@@ -184,7 +184,13 @@ function useGeneratedContent(endpoint: string) {
     setLoading(true);
 
     intervalRef.current = setInterval(() => {
-      setProgress((prev) => (prev >= 90 ? prev : prev + 5));
+      setProgress((current: number) => {
+        if (current >= 90) {
+          return current;
+        }
+
+        return current + 5;
+      });
     }, 200);
 
     try {
