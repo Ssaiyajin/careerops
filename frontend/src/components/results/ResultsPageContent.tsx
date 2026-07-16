@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-
+const [progress, setProgress] = useState<number>(0);
 type DataShape = Record<string, any>;
 
 type ProgressPanelProps = {
