@@ -5,7 +5,7 @@ import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 import { useEffect, useRef, useState } from "react";
 
-const API_BASE = "${API_BASE_URL}";
+const API_BASE = API_BASE_URL;
 
 /* ------------------------------------------------------------------ */
 /*  Small reusable UI pieces                                          */
@@ -172,7 +172,7 @@ function GenerationProgress({
 function useGeneratedContent(endpoint: string) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const generate = async (
