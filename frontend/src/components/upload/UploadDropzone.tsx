@@ -31,6 +31,7 @@ export default function UploadDropzone({
       <input
         type="file"
         accept=".pdf"
+        data-testid="upload-file-input"
         className="hidden"
         onChange={onFileChange}
       />

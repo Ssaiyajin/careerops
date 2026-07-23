@@ -211,6 +211,7 @@ export default function UploadPage() {
             <input
               type="file"
               accept=".pdf"
+              data-testid="upload-file-input"
               onChange={handleFileChange}
               className="text-white"
             />

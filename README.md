@@ -144,6 +144,33 @@ npm run dev
 
 ---
 
+## **Infrastructure**
+
+- **Terraform modules**: Infrastructure is defined under `infrastructure/` and split into modules for OCI, AWS, and Azure. OCI modules are fully configured; AWS and Azure are implemented and can be enabled when ready.
+
+- **Quick start (local)**:
+
+```powershell
+cd infrastructure
+# configure credentials in environment: AWS credentials or `az login` for Azure; OCI vars via env or tfvars
+# optionally create a `terraform.tfvars` with values for tenancy_ocid, compartment_ocid, etc.
+terraform init
+terraform fmt -recursive
+terraform validate
+terraform plan -var='enable_aws=false' -var='enable_azure=false'
+# To enable AWS or Azure set the flags to true and provide provider credentials/keys
+```
+
+- **Enabling AWS/Azure**:
+	- Set `enable_aws = true` and provide `aws_public_key_path`, `vpc_cidr`, and `public_subnet_cidr` in `terraform.tfvars` to deploy the AWS stack.
+	- Set `enable_azure = true` and provide `resource_group_name`, `location`, `admin_ssh_public_key`, `vnet_cidr`, and `subnet_cidr` to deploy the Azure stack.
+
+- **Notes**:
+	- AWS credentials are picked up from the environment/profile; ensure `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, or configure an AWS profile.
+	- Azure uses the AzureRM provider; authenticate with `az login` or environment variables.
+	- OCI credentials remain required for OCI module usage.
+
+
 ## Author ✨
 
 **Nihar Sawant** – DevOps & Software Engineer, interested in **automation, cloud, and machine learning**.

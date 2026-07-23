@@ -80,3 +80,6 @@ Thumbs.db
 ############################
 
 *.pid
+
+
+terraform.tfvars

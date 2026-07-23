@@ -53,14 +53,21 @@ def parse_resume_sections(text: str):
 
         for section_name, keywords in SECTION_KEYWORDS.items():
 
-            if any(keyword in lower_line for keyword in keywords):
+            for keyword in keywords:
+                if (
+                    lower_line == keyword or
+                    lower_line.startswith(f"{keyword} ") or
+                    lower_line.startswith(f"{keyword}:")
+                ):
+                    current_section = section_name
 
-                current_section = section_name
+                    if current_section not in sections:
+                        sections[current_section] = []
 
-                if current_section not in sections:
-                    sections[current_section] = []
+                    found_new_section = True
+                    break
 
-                found_new_section = True
+            if found_new_section:
                 break
 
         if not found_new_section:
