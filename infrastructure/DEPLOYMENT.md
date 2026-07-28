@@ -32,13 +32,20 @@ all kept off this box on purpose — see "Memory budget" below.
 
 ## Architecture
 
+Everything runs as a single chained pipeline (`.github/workflows/pipeline.yml`)
+— one workflow, five sequential jobs. Each stage only runs if the
+previous one passed, and Build/Terraform/Deploy are skipped entirely
+on PRs or pushes to `dev` (those only run the two test jobs):
+
 ```
-GitHub push (main) ──▶ build.yml builds both images ──▶ pushes to GHCR
-                                                              │
-                                                              ▼
-                                     deploy.yml SSHes in, pulls, restarts
-                                                              │
-                                                              ▼
+push to main
+     │
+     ▼
+Backend Tests ──▶ Frontend Tests ──▶ Build & Push Images ──▶ ⏸ manual approval ──▶ Terraform Apply ──▶ Deploy
+                                       (pushes to GHCR)         (production-infra      (idempotent)      (SSH in,
+                                                                 environment)                            pull, restart)
+                                              │
+                                              ▼
                               ┌───────────────────────────────────────┐
                     Internet ─┤  VM.Standard.E2.1.Micro (1GB RAM)     │
                        :3000 ─┤  ├─ frontend (Next.js)                │
@@ -80,14 +87,22 @@ oci compute image list \
 ## 3. Provision the infrastructure
 
 The repo's `infrastructure/` module already targets `E2.1.Micro` by
-default (`oci_shape` in `variables.tf`). Provisioning is a separate,
-manual GitHub Actions workflow (`infra-deploy.yml`) — it doesn't run
-on every push, since infra changes shouldn't ride along with app
-deploys or test runs.
+default (`oci_shape` in `variables.tf`). `terraform apply` runs as a
+stage inside the main pipeline (`.github/workflows/pipeline.yml`),
+but it's gated behind a **manual approval** — the pipeline pauses at
+that job until someone approves it, rather than applying
+automatically on every push.
 
-Set these repo secrets first: `OCI_TENANCY_OCID`, `OCI_USER_OCID`,
-`OCI_FINGERPRINT`, `OCI_PRIVATE_KEY` (the raw key content, not a
-path), `OCI_COMPARTMENT_OCID`, `OCI_IMAGE_ID` (from step 2),
+**One-time setup**: repo Settings → Environments → New environment →
+name it `production-infra` → add yourself (or whoever should approve
+infra changes) as a required reviewer. After that, every pipeline run
+will pause at the Terraform stage and send a notification to review
+before it proceeds.
+
+Set these repo secrets before your first push to `main`:
+`OCI_TENANCY_OCID`, `OCI_USER_OCID`, `OCI_FINGERPRINT`,
+`OCI_PRIVATE_KEY` (the raw key content, not a path),
+`OCI_COMPARTMENT_OCID`, `OCI_IMAGE_ID` (from step 2),
 `OCI_SSH_PUBLIC_KEY`, `OCI_REGION`.
 
 Then run the workflow manually (Actions tab → "Provision OCI
@@ -139,15 +154,19 @@ Generate a real `JWT_SECRET_KEY`:
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-## 5. Set up CI build/deploy
+## 5. Set up the pipeline
 
-Repo secrets needed: `PUBLIC_API_URL` (`http://<public-ip>:8000`,
-baked into the frontend build since Next.js inlines `NEXT_PUBLIC_*`
-vars), `OCI_HOST` (the instance's public IP), `OCI_SSH_PRIVATE_KEY`.
+Repo secrets needed (in addition to the OCI ones from step 3):
+`PUBLIC_API_URL` (`http://<public-ip>:8000`, baked into the frontend
+build since Next.js inlines `NEXT_PUBLIC_*` vars), `OCI_HOST` (the
+instance's public IP), `OCI_SSH_PRIVATE_KEY`.
 
-Push to `main` → `build.yml` builds + pushes both images to GHCR →
-`deploy.yml` SSHes in and does `git pull && docker compose pull && up
--d`. No building happens on the VM.
+Push to `main` → `.github/workflows/pipeline.yml` runs backend tests
+→ frontend tests → builds + pushes both images to GHCR → **pauses for
+manual approval** → applies Terraform once approved → SSHes in and
+does `git pull && docker compose pull && up -d`. Any stage failing
+stops the ones after it. Pushes to `dev` or PRs only run the two test
+jobs.
 
 ## 6. Memory budget on 1GB
 

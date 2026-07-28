@@ -28,7 +28,7 @@ iptables -I INPUT -p tcp --dport 8000 -j ACCEPT || true
 # builds them itself. Building torch/spacy or a Next.js production
 # bundle on a 1GB box risks an OOM kill mid-build.
 if [ ! -d /home/ubuntu/careerops ]; then
-  git clone -b dev https://github.com/Ssaiyajin/careerops.git /home/ubuntu/careerops
+  git clone -b main https://github.com/Ssaiyajin/careerops.git /home/ubuntu/careerops
   chown -R ubuntu:ubuntu /home/ubuntu/careerops
   cp /home/ubuntu/careerops/backend/.env.prod.example /home/ubuntu/careerops/backend/.env
   # IMPORTANT: SSH in afterwards and fill in backend/.env for real —
