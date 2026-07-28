@@ -1,0 +1,155 @@
+name: CareerOps Pipeline
+
+# Single pipeline: tests always run (PR + push). Build, Terraform, and
+# Deploy only run on push to main, and only after the previous stage
+# succeeds — one workflow, one visible run, instead of four separate
+# workflow files each firing independently.
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run backend tests
+        env:
+          DATABASE_URL: "sqlite:///./test.db"
+          JWT_SECRET_KEY: "test-only-secret-not-used-in-prod"
+          GEMINI_API_KEY: "test-key"
+        run: pytest -v
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: backend-tests
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm test -- --runInBand
+
+  build:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    needs: frontend-tests
+    # Only build/deploy on an actual push to main — not on PRs, and
+    # not on pushes to dev (dev deploys to Render separately).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/ssaiyajin/careerops-backend:latest
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ secrets.PUBLIC_API_URL }}
+          tags: ghcr.io/ssaiyajin/careerops-frontend:latest
+
+  terraform:
+    name: Provision OCI Infrastructure
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Requires manual approval before running — set this up once in
+    # Settings -> Environments -> New environment -> name it
+    # "production-infra" -> add yourself as a required reviewer.
+    # The job (and the pipeline) will pause here until approved.
+    environment: production-infra
+    defaults:
+      run:
+        working-directory: infrastructure
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Write OCI API key
+        run: |
+          mkdir -p ~/.oci
+          echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/key.pem
+          chmod 600 ~/.oci/key.pem
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      # Idempotent — if nothing in infrastructure/ changed, this is a
+      # no-op. Still gated behind the environment approval above so
+      # infra changes always get a manual check before applying.
+      - name: Terraform Apply
+        env:
+          TF_VAR_tenancy_ocid: ${{ secrets.OCI_TENANCY_OCID }}
+          TF_VAR_user_ocid: ${{ secrets.OCI_USER_OCID }}
+          TF_VAR_fingerprint: ${{ secrets.OCI_FINGERPRINT }}
+          TF_VAR_private_key_path: ~/.oci/key.pem
+          TF_VAR_compartment_ocid: ${{ secrets.OCI_COMPARTMENT_OCID }}
+          TF_VAR_image_id: ${{ secrets.OCI_IMAGE_ID }}
+          TF_VAR_ssh_public_key: ${{ secrets.OCI_SSH_PUBLIC_KEY }}
+          TF_VAR_region: ${{ secrets.OCI_REGION }}
+        run: terraform apply -input=false -auto-approve
+
+  deploy:
+    name: Deploy to OCI
+    runs-on: ubuntu-latest
+    needs: terraform
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: ubuntu
+          key: ${{ secrets.OCI_SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/careerops
+            git pull origin main
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f
