@@ -1,7 +1,5 @@
 import re
-import spacy
-
-nlp = spacy.load("en_core_web_sm")
+from app.core.nlp import get_nlp
 
 
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
@@ -47,7 +45,7 @@ def clean_entities(values):
 
 def extract_entities(text: str):
 
-    doc = nlp(text)
+    nlp = get_nlp()
 
     entities = {
         "names": [],
@@ -58,84 +56,86 @@ def extract_entities(text: str):
         "phones": []
     }
 
-    for ent in doc.ents:
+    if nlp is not None:
+        doc = nlp(text)
 
-        value = ent.text.strip()
+        for ent in doc.ents:
+            value = ent.text.strip()
 
-        # ======================
-        # PERSON
-        # ======================
-        if ent.label_ == "PERSON":
+            # ======================
+            # PERSON
+            # ======================
+            if ent.label_ == "PERSON":
 
-            # Ignore digits
-            if any(char.isdigit() for char in value):
-                continue
+                # Ignore digits
+                if any(char.isdigit() for char in value):
+                    continue
 
-            # Ignore emails
-            if "@" in value:
-                continue
+                # Ignore emails
+                if "@" in value:
+                    continue
 
-            # Ignore known locations
-            if value in KNOWN_LOCATIONS:
-                continue
+                # Ignore known locations
+                if value in KNOWN_LOCATIONS:
+                    continue
 
-            # Ignore programming languages / tech terms
-            banned_names = [
-                "Python",
-                "Java",
-                "JavaScript",
-                "TypeScript",
-                "C",
-                "C++",
-                "C#",
-                "Docker",
-                "Kubernetes",
-                "Terraform",
-                "AWS",
-                "Azure",
-                "GCP",
-                "FastAPI",
-                "React",
-                "Next.js",
-                "Node.js",
-                "Machine Learning",
-                "Deep Learning",
-            ]
+                # Ignore programming languages / tech terms
+                banned_names = [
+                    "Python",
+                    "Java",
+                    "JavaScript",
+                    "TypeScript",
+                    "C",
+                    "C++",
+                    "C#",
+                    "Docker",
+                    "Kubernetes",
+                    "Terraform",
+                    "AWS",
+                    "Azure",
+                    "GCP",
+                    "FastAPI",
+                    "React",
+                    "Next.js",
+                    "Node.js",
+                    "Machine Learning",
+                    "Deep Learning",
+                ]
 
-            if value in banned_names:
-                continue
+                if value in banned_names:
+                    continue
 
-            # Ignore long weird entities
-            if len(value.split()) > 4:
-                continue
+                # Ignore long weird entities
+                if len(value.split()) > 4:
+                    continue
 
-            # Usually real names are alphabetic
-            if not any(char.isalpha() for char in value):
-                continue
+                # Usually real names are alphabetic
+                if not any(char.isalpha() for char in value):
+                    continue
 
-            entities["names"].append(value)
+                entities["names"].append(value)
 
-        # ======================
-        # ORGANIZATION
-        # ======================
-        elif ent.label_ == "ORG":
+            # ======================
+            # ORGANIZATION
+            # ======================
+            elif ent.label_ == "ORG":
 
-            if len(value) > 2:
+                if len(value) > 2:
 
-                # Ignore phone-like orgs
-                if not re.match(PHONE_REGEX, value):
-                    entities["organizations"].append(value)
+                    # Ignore phone-like orgs
+                    if not re.match(PHONE_REGEX, value):
+                        entities["organizations"].append(value)
 
-        # ======================
-        # LOCATIONS
-        # ======================
-        elif ent.label_ in ["GPE", "LOC"]:
+            # ======================
+            # LOCATIONS
+            # ======================
+            elif ent.label_ in ["GPE", "LOC"]:
 
-            # Ignore numeric locations
-            if any(char.isdigit() for char in value):
-                continue
+                # Ignore numeric locations
+                if any(char.isdigit() for char in value):
+                    continue
 
-            entities["locations"].append(value)
+                entities["locations"].append(value)
 
     # ======================
     # EMAILS

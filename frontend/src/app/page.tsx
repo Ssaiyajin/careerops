@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { isLoggedIn } from "@/lib/auth/token"; // correct path
 
 export default function HomePage() {
+const router = useRouter();
   return (
     <main className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-black text-white">
 
@@ -30,78 +35,48 @@ export default function HomePage() {
             AI
           </span>
         </h1>
-
+        
         {/* Subtitle */}
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/60 sm:text-xl">
           Analyze resumes, discover skill gaps, and generate your
           personalized AI-driven career roadmap.
         </p>
 
-        {/* BUTTON */}
-       <div className="mt-12 flex justify-center">
-        <Link
-          href="/upload"
-          className="
-            group
-            inline-flex
-            items-center
-            justify-center
-            gap-4
-            rounded-full
-            bg-gradient-to-r
-            from-green-500
-            to-emerald-600
-            px-8
-            py-4
-            text-lg
-            font-semibold
-            text-white
-            shadow-[0_0_45px_rgba(34,197,94,0.35)]
-            transition-all
-            duration-300
-            hover:scale-105
-            hover:shadow-[0_0_65px_rgba(34,197,94,0.55)]
-          "
-        >
+        <div className="mt-16 flex flex-col items-center gap-5">
 
-          {/* Icon */}
-          <span
+          <Link
+            href="/register"
             className="
-              flex
-              h-12
-              w-12
-              items-center
-              justify-center
               rounded-full
-              bg-white/10
+              bg-gradient-to-r
+              from-green-500
+              to-emerald-600
+              px-10
+              py-4
+              text-lg
+              font-semibold
+              text-white
               transition-all
-              duration-300
-              group-hover:bg-white/20
+              hover:scale-105
             "
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2.5}
-              stroke="currentColor"
-              className="h-6 w-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 16V4m0 0l-4 4m4-4l4 4M4 16.5v1.125C4 18.936 5.064 20 6.375 20h11.25C18.936 20 20 18.936 20 17.625V16.5"
-              />
-            </svg>
-          </span>
+            Get Started Free
+          </Link>
 
-          {/* Text */}
-          <span>
-            Upload Resume
-          </span>
+          {!isLoggedIn() && (
+            <p className="text-white/60">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-green-400 hover:text-green-300"
+              >
+                Login
+              </Link>
+            </p>
+          )}
 
-        </Link>
         </div>
+        
 
 
         {/* Footer */}

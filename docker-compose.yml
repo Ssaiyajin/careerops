@@ -1,0 +1,48 @@
+# Local development. Includes a local Postgres for convenience —
+# don't use this file on the 1GB OCI VM (see docker-compose.prod.yml).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: careerops-postgres
+    environment:
+      POSTGRES_USER: careerops
+      POSTGRES_PASSWORD: careerops
+      POSTGRES_DB: careerops
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: careerops-backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://careerops:careerops@postgres:5432/careerops
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-uploads:/app/uploads
+      - backend-exports:/app/exports
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: careerops-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  backend-uploads:
+  backend-exports:

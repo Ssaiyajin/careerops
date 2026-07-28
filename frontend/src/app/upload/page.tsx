@@ -3,20 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { uploadResume } from "@/lib/api";
+import { uploadResume } from "@/lib/api/rewrite";
 import { setResumeData } from "@/store/resumeStore";
 
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
+import { useAuthGuard } from "@/lib/auth/auth-guard";
 export default function UploadPage() {
   const router = useRouter();
+  useAuthGuard();
 
   const [fileName, setFileName] = useState("");
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
-  const [model, setModel] = useState("mistral:latest");
 
   const [jobDescription, setJobDescription] = useState("");
 
@@ -75,7 +76,6 @@ export default function UploadPage() {
 
         const data = await uploadResume(
           file,
-          model,
           jobDescription
         );
 
@@ -129,26 +129,9 @@ export default function UploadPage() {
           </p>
 
         </div>
+        {/* JOB DESCRIPTION */}
+        <div className="mt-12 w-full max-w-4xl">
 
-        {/* Upload Card */}
-        <div
-          className="
-          mt-14
-          w-full
-          max-w-3xl
-          rounded-3xl
-          border
-          border-green-400/20
-          bg-white/5
-          p-8
-          backdrop-blur-xl
-          transition-all
-          duration-500
-          hover:border-green-400/50
-          hover:shadow-[0_0_80px_rgba(34,197,94,0.12)]
-          " 
-        >
-        <div className="mt-8 w-full max-w-3xl">
           <label className="mb-3 block text-left text-sm text-white/70">
             Paste Job Description
           </label>
@@ -171,14 +154,35 @@ export default function UploadPage() {
               focus:border-green-400
             "
           />
+
         </div>
-          {/* Upload Area */}
+        {/* Upload Card */}
+        <div
+          className="
+          mt-14
+          mb-20
+          w-full
+          max-w-4xl
+          rounded-3xl
+          border
+          border-green-400/20
+          bg-white/5
+          p-8
+          backdrop-blur-xl
+          transition-all
+          duration-500
+          hover:border-green-400/50
+          hover:shadow-[0_0_80px_rgba(34,197,94,0.12)]
+          " 
+        >
+        {/* Upload Area */}
           <label
             className="
             group
             relative
             flex
             h-72
+            w-full
             cursor-pointer
             flex-col
             items-center
@@ -205,6 +209,7 @@ export default function UploadPage() {
             <input
               type="file"
               accept=".pdf"
+              data-testid="upload-file-input"
               onChange={handleFileChange}
               className="text-white"
             />
@@ -282,50 +287,6 @@ export default function UploadPage() {
 
             </div>
           )}
-
-
-          {/* MODEL SELECTOR */}
-          <div className="mb-8 flex justify-center gap-4">
-
-            <button
-              type="button"
-              onClick={() => setModel("mistral:latest")}
-              className={`
-                rounded-xl
-                px-6
-                py-3
-                border
-                transition-all
-                ${
-                  model === "mistral:latest"
-                    ? "bg-cyan-500 text-black border-cyan-400"
-                    : "bg-black/30 text-white border-white/20"
-                }
-              `}
-            >
-               Mistral (Smart)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setModel("phi3:mini")}
-              className={`
-                rounded-xl
-                px-6
-                py-3
-                border
-                transition-all
-                ${
-                  model === "phi3:mini"
-                    ? "bg-green-500 text-black border-green-400"
-                    : "bg-black/30 text-white border-white/20"
-                }
-              `}
-            >
-              Phi-3 Mini (Fast)
-            </button>
-
-          </div>
                 
         </div>
       </div>
