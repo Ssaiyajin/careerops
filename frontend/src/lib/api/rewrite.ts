@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./index";
+import { getToken } from "@/lib/auth/token";
 
 export async function uploadResume(file: File, jobDescription: string) {
   const formData = new FormData();
@@ -8,6 +9,9 @@ export async function uploadResume(file: File, jobDescription: string) {
 
   const response = await fetch(`${API_BASE_URL}/api/resume/upload`, {
     method: "POST",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: formData,
   });
 

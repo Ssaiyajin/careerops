@@ -16,10 +16,6 @@ jest.mock("@/store/resumeStore", () => ({
   setResumeData: jest.fn()
 }));
 
-jest.mock("@/lib/auth/protect", () => ({
-  useProtectRoute: jest.fn()
-}));
-
 jest.mock("@/lib/auth/auth-guard", () => ({
   useAuthGuard: jest.fn()
 }));

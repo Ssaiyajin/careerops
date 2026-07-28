@@ -17,6 +17,7 @@ resource "oci_core_route_table" "this" {
 
   route_rules {
     destination       = "0.0.0.0/0"
+    destination_type  = "CIDR_BLOCK"
     network_entity_id = oci_core_internet_gateway.this.id
   }
 }

@@ -1,7 +1,11 @@
 import shutil
-
-from fastapi import APIRouter, UploadFile, File, Form
+import traceback
+import uuid
 from pathlib import Path
+
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+
+from app.core.config import settings
 from app.services.nlp_processor import process_text
 from app.services.entity_extractor import extract_entities
 from app.services.ats_scorer import calculate_ats_score
@@ -16,13 +20,16 @@ from app.services.gemini_analyzer import generate_gemini_recommendations
 from app.database.database_service import save_resume_analysis
 from app.services.ats_advisor import generate_ats_advice
 from app.services.resume_rewriter import rewrite_resume
-
+from app.auth.dependencies import get_current_user
+from app.database.models import User
 
 
 router = APIRouter()
 
-UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR = Path(settings.upload_dir)
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
 
 
 target_job_skills = [
@@ -39,8 +46,10 @@ target_job_skills = [
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    job_description: str = Form(...)
+    job_description: str = Form(...),
+    current_user: User = Depends(get_current_user),
 ):
+    file_path = None
     try:
         # Validate PDF
         if file.content_type != "application/pdf":
@@ -48,11 +57,23 @@ async def upload_resume(
                 "error": "Only PDF files are allowed"
             }
 
-        file_path = UPLOAD_DIR / file.filename
+        # Use a generated filename rather than the client-supplied one.
+        # Trusting file.filename directly (e.g. writing to
+        # UPLOAD_DIR / file.filename) allows path traversal
+        # ("../../whatever") and lets concurrent uploads with the same
+        # name overwrite each other.
+        safe_filename = f"{uuid.uuid4().hex}.pdf"
+        file_path = UPLOAD_DIR / safe_filename
 
-        # Save file
+        # Enforce a size limit before writing to disk.
+        contents = await file.read()
+        if len(contents) > MAX_UPLOAD_BYTES:
+            return {
+                "error": f"File too large — max {settings.max_upload_size_mb}MB"
+            }
+
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(contents)
 
         # Extract PDF text
         extracted_text = extract_text_from_pdf(str(file_path))
@@ -120,7 +141,7 @@ async def upload_resume(
             )
         print("ATS DATA:", ats_data)
         print("JOB MATCH:", job_match_data)
-        # Save analysis to database
+        # Save analysis to database, scoped to the logged-in user
         saved = save_resume_analysis(
             candidate_name=candidate_name,
             email=entities.get("emails", [""])[0]
@@ -129,7 +150,8 @@ async def upload_resume(
             ats_score=ats_data["ats_score"],
             match_score=job_match_data["match_score"],
             experience_level=experience_level,
-            resume_text=extracted_text
+            resume_text=extracted_text,
+            user_id=current_user.id,
             )
 
         print("DATABASE SAVE:", saved.id)
@@ -155,10 +177,20 @@ async def upload_resume(
         }
     
     except Exception as e:
+        # Log the full traceback server-side only — returning it to
+        # the client leaks internals (file paths, library versions,
+        # sometimes fragments of the request) to whoever calls this.
         print(f"UPLOAD ERROR: {str(e)}")
-        import traceback
         traceback.print_exc()
-        return {
-            "error": f"Failed to process resume: {str(e)}",
-            "details": traceback.format_exc()
-        }
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to process resume. Please try again.",
+        )
+    finally:
+        # Clean up the uploaded file — nothing downstream needs it on
+        # disk after extraction, and it's PII (a resume).
+        try:
+            if file_path is not None and file_path.exists():
+                file_path.unlink()
+        except Exception:
+            pass

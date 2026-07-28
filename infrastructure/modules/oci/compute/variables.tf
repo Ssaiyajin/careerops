@@ -8,3 +8,7 @@ variable "memory_in_gbs" { type = number }
 variable "shape" { type = string }
 variable "availability_domain" { type = string }
 variable "cloud_init_file" { type = string }
+variable "is_flex_shape" {
+  type    = bool
+  default = false
+}

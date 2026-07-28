@@ -21,7 +21,7 @@ export const useAuth = () => {
   document.cookie =
     `careerops_token=${res.access_token}; path=/`;
 
-  router.push("/dashboard");;
+  router.push("/dashboard");
 }
 
     return res;

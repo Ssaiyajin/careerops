@@ -1,12 +1,18 @@
 from fastapi.testclient import TestClient
 from app.main import app
-from app.auth.database import fake_users_db
+from app.database.db import engine
+from app.database.models import Base, User
+from sqlalchemy.orm import Session
 
 client = TestClient(app)
 
 
 def setup_function():
-    fake_users_db.clear()
+    Base.metadata.create_all(bind=engine)
+    db = Session(bind=engine)
+    db.query(User).delete()
+    db.commit()
+    db.close()
 
 
 def test_login_invalid():

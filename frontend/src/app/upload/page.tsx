@@ -9,11 +9,9 @@ import { setResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
-import { useProtectRoute } from "@/lib/auth/protect";
 import { useAuthGuard } from "@/lib/auth/auth-guard";
 export default function UploadPage() {
   const router = useRouter();
-  useProtectRoute();
   useAuthGuard();
 
   const [fileName, setFileName] = useState("");

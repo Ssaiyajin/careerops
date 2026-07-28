@@ -123,7 +123,13 @@ variable "azure_admin_username" {
 
 variable "oci_shape" {
   type    = string
-  default = "VM.Standard.A1.Flex"
+  default = "VM.Standard.E2.1.Micro" # 1GB RAM x86 Always Free shape — the actual deploy target
+}
+
+variable "oci_is_flex_shape" {
+  description = "Set true only if oci_shape is switched to a *.Flex shape (e.g. A1.Flex)"
+  type        = bool
+  default     = false
 }
 
 variable "oci_availability_domain" {

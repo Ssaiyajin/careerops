@@ -31,6 +31,7 @@ module "oci_compute" {
   ocpus                 = var.ocpus
   memory_in_gbs         = var.memory_in_gbs
   shape                 = var.oci_shape
+  is_flex_shape         = var.oci_is_flex_shape
   availability_domain   = var.oci_availability_domain
   cloud_init_file       = "./modules/oci/compute/cloud-init.sh"
 }

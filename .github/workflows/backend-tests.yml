@@ -26,47 +26,16 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
 
       - name: Run Tests
+        env:
+          DATABASE_URL: "sqlite:///./test.db"
+          JWT_SECRET_KEY: "test-only-secret-not-used-in-prod"
+          GEMINI_API_KEY: "test-key"
         run: |
           pytest -v
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: "1.5.7"
-
-      - name: Terraform Init
-        working-directory: ../infrastructure
-        run: |
-          terraform init -input=false
-
-      - name: Terraform Plan
-        id: tfplan
-        working-directory: ../infrastructure
-        run: |
-          set +e
-          terraform plan -detailed-exitcode -out=tfplan -input=false
-          plan_exit_code=$?
-          echo "plan_exit_code=$plan_exit_code" >> $GITHUB_OUTPUT
-          if [ $plan_exit_code -eq 0 ]; then
-            echo "No changes to deploy."
-            exit 0
-          elif [ $plan_exit_code -eq 2 ]; then
-            echo "Changes detected in Terraform plan."
-            exit 0
-          else
-            echo "Terraform plan failed with exit code $plan_exit_code."
-            exit $plan_exit_code
-          fi
-
-      - name: Terraform Apply
-        if: steps.tfplan.outputs.plan_exit_code == '2'
-        working-directory: ../infrastructure
-        run: |
-          terraform apply -input=false -auto-approve tfplan
