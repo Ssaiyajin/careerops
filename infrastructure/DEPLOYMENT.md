@@ -1,4 +1,29 @@
-# Deploying CareerOps to OCI
+# Deploying CareerOps
+
+## Environments
+
+| | Dev | Prod |
+|---|---|---|
+| Backend host | Render | OCI (`VM.Standard.E2.1.Micro`, this doc) |
+| Frontend host | Vercel (branch: `dev`) | Vercel (branch: `main`) |
+| Database | Neon **`dev`** branch | Neon **`main`**/production branch |
+| Git branch | `dev` | `main` |
+| Env file | `backend/.env.dev.example` | `backend/.env.prod.example` |
+
+Two separate `JWT_SECRET_KEY` values and two separate Neon branch
+connection strings — tokens issued by dev shouldn't validate against
+prod, and dev experiments shouldn't be able to touch production data.
+CORS already allows any `*.vercel.app` origin plus localhost (see
+`backend/app/main.py`), so the same frontend config works against
+either backend.
+
+The rest of this doc covers the **OCI/prod** side specifically —
+Render's dev setup is just: create the Render service, point it at
+`backend/`, and set the env vars from `backend/.env.dev.example`.
+
+---
+
+# Deploying to OCI (prod)
 
 Target: a single **Always Free** `VM.Standard.E2.1.Micro` instance
 (x86 AMD EPYC, 1/8 OCPU, **1GB RAM**) running the frontend and backend
@@ -95,7 +120,7 @@ E2.1.Micro instance.
 1. Adds a 2GB swapfile (OOM safety margin, not a performance fix)
 2. Installs Docker + the Compose plugin
 3. Clones the `dev` branch to `/home/ubuntu/careerops`
-4. Copies `backend/.env.example` → `backend/.env`
+4. Copies `backend/.env.prod.example` → `backend/.env`
 5. Pulls the prebuilt images from GHCR and starts them
 
 **You still need to fill in `backend/.env` for real** — this can't be
