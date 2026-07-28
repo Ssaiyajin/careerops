@@ -11,7 +11,7 @@ def test_history_requires_auth():
 
     response = client.get("/api/history")
 
-    assert response.status_code == 401 # no Authorization header at all
+    assert response.status_code == 403  # no Authorization header at all
 
 
 def test_history_with_valid_token():

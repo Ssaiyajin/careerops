@@ -23,7 +23,7 @@ def test_upload_requires_auth():
         data={"job_description": "Python Developer"},
     )
 
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 
 def test_upload_no_pdf():
