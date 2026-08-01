@@ -1,13 +1,5 @@
-
-variable "enabled" { type = bool }
-variable "ami" { type = string }
-variable "instance_type" { type = string }
-variable "key_name" { type = string }
-variable "vpc_cidr" { type = string }
-variable "public_subnet_cidr" { type = string }
-variable "aws_public_key_path" { type = string }
-
 data "aws_ami" "ubuntu" {
+  count       = var.enabled ? 1 : 0
   most_recent = true
   owners      = ["099720109477"]
   filter {
@@ -93,7 +85,7 @@ resource "aws_security_group" "this" {
 resource "aws_instance" "this" {
   count = var.enabled ? 1 : 0
 
-  ami           = (var.ami != "" ? var.ami : data.aws_ami.ubuntu.id)
+  ami           = (var.ami != "" ? var.ami : data.aws_ami.ubuntu[0].id)
   instance_type = var.instance_type
   subnet_id     = aws_subnet.public[0].id
   vpc_security_group_ids = [aws_security_group.this[0].id]

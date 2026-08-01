@@ -146,14 +146,14 @@ npm run dev
 
 ## **Infrastructure**
 
-- **Terraform modules**: Infrastructure is defined under `infrastructure/` and split into modules for OCI, AWS, and Azure. OCI modules are fully configured; AWS and Azure are implemented and can be enabled when ready.
+- **Terraform modules**: Infrastructure is defined under `infrastructure/` and split into modules for GCP, AWS, and Azure. GCP is the active deploy target (Always Free `e2-micro`, see `infrastructure/DEPLOYMENT.md`); AWS and Azure are implemented and can be enabled when ready.
 
 - **Quick start (local)**:
 
 ```powershell
 cd infrastructure
-# configure credentials in environment: AWS credentials or `az login` for Azure; OCI vars via env or tfvars
-# optionally create a `terraform.tfvars` with values for tenancy_ocid, compartment_ocid, etc.
+# configure credentials in environment: GOOGLE_APPLICATION_CREDENTIALS for GCP; AWS credentials or `az login` for Azure
+# optionally create a `terraform.tfvars` with values for gcp_project, gcp_ssh_public_key, etc.
 terraform init
 terraform fmt -recursive
 terraform validate
@@ -166,9 +166,9 @@ terraform plan -var='enable_aws=false' -var='enable_azure=false'
 	- Set `enable_azure = true` and provide `resource_group_name`, `location`, `admin_ssh_public_key`, `vnet_cidr`, and `subnet_cidr` to deploy the Azure stack.
 
 - **Notes**:
+	- GCP credentials are picked up via Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` pointing at a service account key), or `gcloud auth application-default login` locally.
 	- AWS credentials are picked up from the environment/profile; ensure `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, or configure an AWS profile.
 	- Azure uses the AzureRM provider; authenticate with `az login` or environment variables.
-	- OCI credentials remain required for OCI module usage.
 
 
 ## Author ✨

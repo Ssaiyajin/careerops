@@ -1,7 +1,8 @@
-# Production compose for the 1GB OCI VM. Pulls prebuilt images from
-# GHCR rather than building on-box (see .github/workflows/build.yml),
-# and does NOT run Postgres locally — DATABASE_URL should point at an
-# external managed instance (Supabase/Neon/OCI Autonomous DB free tier).
+# Production compose for the 1GB GCP e2-micro VM. Pulls prebuilt
+# images from GHCR rather than building on-box (see
+# .github/workflows/pipeline.yml), and does NOT run Postgres locally —
+# DATABASE_URL should point at an external managed instance
+# (Supabase/Neon free tier).
 services:
   backend:
     image: ghcr.io/ssaiyajin/careerops-backend:latest

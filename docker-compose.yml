@@ -1,5 +1,5 @@
 # Local development. Includes a local Postgres for convenience —
-# don't use this file on the 1GB OCI VM (see docker-compose.prod.yml).
+# don't use this file on the 1GB GCP VM (see docker-compose.prod.yml).
 services:
   postgres:
     image: postgres:16-alpine
