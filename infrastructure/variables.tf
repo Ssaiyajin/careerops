@@ -10,7 +10,7 @@ variable "enable_aws" {
 
 variable "aws_ami" {
   type    = string
-  default = "ubuntu-24.04-ami"
+  default = ""
 }
 
 variable "aws_instance_type" {
@@ -21,6 +21,21 @@ variable "aws_instance_type" {
 variable "aws_key_name" {
   type    = string
   default = "careerops-key"
+}
+
+variable "aws_vpc_cidr" {
+  type    = string
+  default = "10.0.0.0/16"
+}
+
+variable "aws_public_subnet_cidr" {
+  type    = string
+  default = "10.0.1.0/24"
+}
+
+variable "aws_public_key_path" {
+  type    = string
+  default = "REPLACE_WITH_PATH_TO_SSH_PUBLIC_KEY_FILE"
 }
 
 variable "enable_azure" {
@@ -38,14 +53,40 @@ variable "azure_admin_username" {
   default = "ubuntu"
 }
 
+variable "azure_location" {
+  type    = string
+  default = "East US"
+}
+
+variable "azure_resource_group_name" {
+  type    = string
+  default = "careerops-rg"
+}
+
+variable "azure_vnet_cidr" {
+  type    = string
+  default = "10.1.0.0/16"
+}
+
+variable "azure_subnet_cidr" {
+  type    = string
+  default = "10.1.1.0/24"
+}
+
+variable "azure_admin_ssh_public_key" {
+  type    = string
+  default = "REPLACE_WITH_SSH_PUBLIC_KEY"
+}
+
 variable "enable_gcp" {
-  description = "GCP is the active deploy target (Always Free e2-micro)"
+  description = "Create GCP resources when true"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "gcp_project" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "gcp_region" {
@@ -84,10 +125,11 @@ variable "gcp_ssh_username" {
 }
 
 variable "gcp_ssh_public_key" {
-  type = string
+  type    = string
+  default = "REPLACE_WITH_SSH_PUBLIC_KEY"
 }
 
 variable "gcp_startup_script" {
   type    = string
-  default = "./modules/gcp/startup.sh"
+  default = "./startup.sh"
 }

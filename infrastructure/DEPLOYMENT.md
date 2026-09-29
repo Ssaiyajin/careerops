@@ -21,6 +21,37 @@ The rest of this doc covers the **GCP/prod** side specifically —
 Render's dev setup is just: create the Render service, point it at
 `backend/`, and set the env vars from `backend/.env.dev.example`.
 
+## Cloud provider selection
+
+Terraform supports AWS, Azure, and GCP from the same root module. All
+three providers are disabled by default. Set `enable_aws`,
+`enable_azure`, or `enable_gcp` to `true` to create that provider's
+network and VM resources; each can be enabled independently, including
+multiple providers in one apply. Disabled providers create no cloud
+resources.
+
+Before enabling a provider, supply its normal cloud credentials and
+SSH public key. The key settings have deliberate placeholder defaults;
+Terraform planning fails if a provider is enabled without replacing
+its placeholder. AWS uses `aws_public_key_path`, Azure uses
+`azure_admin_ssh_public_key`, and GCP uses `gcp_ssh_public_key` plus
+`gcp_project`. The AWS AMI defaults to the latest matching Ubuntu 22.04
+image when `aws_ami` is empty.
+
+For example, to provision AWS locally:
+
+```bash
+terraform apply \
+  -var="enable_aws=true" \
+  -var="aws_public_key_path=/home/<user>/.ssh/id_ed25519.pub"
+```
+
+To provision Azure, use `-var="enable_azure=true"` and provide
+`azure_admin_ssh_public_key`. To provision GCP, use
+`-var="enable_gcp=true"` with the project ID and SSH key arguments
+shown below. The production GitHub Actions workflow explicitly enables
+GCP and leaves AWS/Azure disabled.
+
 ---
 
 # Deploying to GCP (prod)
@@ -124,6 +155,7 @@ cd infrastructure
 export GOOGLE_APPLICATION_CREDENTIALS=~/careerops-tf-key.json
 terraform init
 terraform apply \
+  -var="enable_gcp=true" \
   -var="gcp_project=<your-project-id>" \
   -var="gcp_region=us-central1" \
   -var="gcp_zone=us-central1-a" \

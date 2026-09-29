@@ -127,6 +127,7 @@ jobs:
       # infra changes always get a manual check before applying.
       - name: Terraform Apply
         env:
+          TF_VAR_enable_gcp: "true"
           TF_VAR_gcp_project: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_gcp_region: ${{ secrets.GCP_REGION }}
           TF_VAR_gcp_zone: ${{ secrets.GCP_ZONE }}

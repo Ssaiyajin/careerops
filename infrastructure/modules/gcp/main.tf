@@ -38,6 +38,13 @@ resource "google_compute_firewall" "app" {
 resource "google_compute_instance" "this" {
   count = var.enabled ? 1 : 0
 
+  lifecycle {
+    precondition {
+      condition     = trimspace(var.ssh_public_key) != "" && var.ssh_public_key != "REPLACE_WITH_SSH_PUBLIC_KEY"
+      error_message = "Set gcp_ssh_public_key to a real SSH public key before enabling GCP."
+    }
+  }
+
   name         = var.name
   machine_type = var.machine_type
   zone         = var.zone

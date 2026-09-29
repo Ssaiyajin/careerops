@@ -43,9 +43,16 @@ resource "aws_route_table_association" "public" {
 }
 
 resource "aws_key_pair" "this" {
-  count = var.enabled ? 1 : 0
+  count     = var.enabled ? 1 : 0
   key_name   = var.key_name
   public_key = file(var.aws_public_key_path)
+
+  lifecycle {
+    precondition {
+      condition     = trimspace(var.aws_public_key_path) != "" && var.aws_public_key_path != "REPLACE_WITH_PATH_TO_SSH_PUBLIC_KEY_FILE"
+      error_message = "Set aws_public_key_path to a real SSH public-key file before enabling AWS."
+    }
+  }
 }
 
 resource "aws_security_group" "this" {

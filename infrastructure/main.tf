@@ -3,18 +3,26 @@
 module "aws_placeholder" {
   source = "./modules/aws"
 
-  enabled       = var.enable_aws
-  ami           = var.aws_ami
-  instance_type = var.aws_instance_type
-  key_name      = var.aws_key_name
+  enabled             = var.enable_aws
+  ami                 = var.aws_ami
+  instance_type       = var.aws_instance_type
+  key_name             = var.aws_key_name
+  vpc_cidr             = var.aws_vpc_cidr
+  public_subnet_cidr   = var.aws_public_subnet_cidr
+  aws_public_key_path = var.aws_public_key_path
 }
 
 module "azure_placeholder" {
   source = "./modules/azure"
 
-  enabled        = var.enable_azure
-  vm_size        = var.azure_vm_size
-  admin_username = var.azure_admin_username
+  enabled             = var.enable_azure
+  vm_size             = var.azure_vm_size
+  admin_username      = var.azure_admin_username
+  location            = var.azure_location
+  resource_group_name = var.azure_resource_group_name
+  vnet_cidr           = var.azure_vnet_cidr
+  subnet_cidr         = var.azure_subnet_cidr
+  admin_ssh_public_key = var.azure_admin_ssh_public_key
 }
 
 module "gcp" {
