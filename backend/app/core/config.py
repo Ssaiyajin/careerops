@@ -16,6 +16,17 @@ class Settings:
     # disk — an unbounded upload size is a resource-exhaustion vector.
     max_upload_size_mb: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10"))
 
+    generation_requests_per_minute: int = int(
+        os.getenv("GENERATION_REQUESTS_PER_MINUTE", "2")
+    )
+    generation_credits_per_day: int = int(
+        os.getenv("GENERATION_CREDITS_PER_DAY", "12")
+    )
+    export_requests_per_minute: int = int(
+        os.getenv("EXPORT_REQUESTS_PER_MINUTE", "5")
+    )
+    exports_per_day: int = int(os.getenv("EXPORTS_PER_DAY", "30"))
+
     # Target skills for job matching (configurable via environment)
     # Can be JSON array or comma-separated string
     _target_skills_env = os.getenv("TARGET_SKILLS", "")

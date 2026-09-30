@@ -3,6 +3,7 @@ import { API_BASE_URL } from "@/lib/api";
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
+import { getToken } from "@/lib/auth/token";
 import { useEffect, useRef, useState } from "react";
 
 const API_BASE = API_BASE_URL;
@@ -196,15 +197,21 @@ function useGeneratedContent(endpoint: string) {
     try {
       const response = await fetch(`${API_BASE}${endpoint}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: JSON.stringify(body),
       });
       const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.detail || fallbackText);
+      }
       setProgress(100);
       setContent(result[resultKey] || fallbackText);
     } catch (error) {
       console.error(error);
-      setContent(fallbackText);
+      setContent(error instanceof Error ? error.message : fallbackText);
     } finally {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setLoading(false);
@@ -237,9 +244,17 @@ async function downloadDocxFromApi(
 ) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
+    },
     body: JSON.stringify(body),
   });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    window.alert(result.detail || "Document export failed.");
+    return;
+  }
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -1,6 +1,9 @@
 from sqlalchemy import (
     Column,
+    Float,
+    ForeignKey,
     Integer,
+    Index,
     String,
     Text,
     DateTime
@@ -53,4 +56,18 @@ class ResumeAnalysis(Base):
     created_at = Column(
         DateTime,
         default=lambda: datetime.now(timezone.utc)
+    )
+
+
+class ApiUsageEvent(Base):
+    __tablename__ = "api_usage_events"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    operation = Column(String(32), nullable=False)
+    units = Column(Integer, nullable=False, default=1)
+    created_at_epoch = Column(Float, nullable=False)
+
+    __table_args__ = (
+        Index("ix_api_usage_user_operation_time", "user_id", "operation", "created_at_epoch"),
     )
