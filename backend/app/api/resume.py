@@ -32,17 +32,6 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
 
 
-target_job_skills = [
-    "Python",
-    "Docker",
-    "Kubernetes",
-    "Terraform",
-    "AWS",
-    "CI/CD",
-    "FastAPI",
-]
-
-
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
@@ -107,9 +96,10 @@ async def upload_resume(
         extracted_text
         )
         
+        job_description_skills = extract_skills(job_description)
         job_match_data = match_resume_to_job(
-        skills,
-        target_job_skills
+            skills,
+            job_description_skills,
         )
         
         semantic_match_data = semantic_job_match(
