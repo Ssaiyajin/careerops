@@ -35,7 +35,9 @@ jobs:
           DATABASE_URL: "sqlite:///./test.db"
           JWT_SECRET_KEY: "test-only-secret-not-used-in-prod"
           GEMINI_API_KEY: "test-key"
-        run: pytest -v
+        run: |
+          alembic upgrade head
+          pytest -v
 
   frontend-tests:
     name: Frontend Tests
@@ -54,6 +56,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
       - run: npm test -- --runInBand
 
   build:

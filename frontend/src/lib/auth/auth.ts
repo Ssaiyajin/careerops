@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/api";
+import { getToken } from "@/lib/auth/token";
 
 export async function login(email: string, password: string) {
   const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -30,4 +31,18 @@ export async function register(email: string, password: string) {
   }
 
   return data;
+}
+
+export async function deleteAccount() {
+  const response = await fetch(`${API_BASE_URL}/api/auth/account`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.detail || "Account deletion failed");
+  }
 }

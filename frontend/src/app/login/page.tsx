@@ -10,12 +10,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
     const submit = async () => {
-    const result = await handleLogin(
+    await handleLogin(
       email,
       password
     );
-
-    console.log(result);
   };
   return (
     <main className="flex min-h-screen items-center justify-center bg-black text-white relative overflow-hidden">

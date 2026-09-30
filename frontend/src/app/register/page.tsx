@@ -30,12 +30,7 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
-      const registerResult = await register(
-        email,
-        password
-      );
-
-      console.log(registerResult);
+      await register(email, password);
       
       const loginResult = await login(
         email,
@@ -44,8 +39,7 @@ export default function RegisterPage() {
 
       if (loginResult.access_token) {
         saveToken(loginResult.access_token);
-        document.cookie = `careerops_token=${loginResult.access_token}; path=/`;
-        router.push("/dashboard");;
+        router.push("/dashboard");
       }
     } catch (error) {
       console.error(error);

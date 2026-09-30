@@ -46,3 +46,9 @@ export function getResumeData(): ResumeData | null {
 
   return JSON.parse(stored);
 }
+
+export function clearResumeData() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("resumeData");
+  }
+}

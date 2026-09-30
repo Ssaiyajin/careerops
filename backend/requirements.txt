@@ -8,6 +8,7 @@ uvicorn==0.48.0
 python-multipart==0.0.29
 
 # Database & ORM
+alembic==1.16.5
 SQLAlchemy==2.0.50
 psycopg2-binary==2.9.12
 greenlet==3.5.1

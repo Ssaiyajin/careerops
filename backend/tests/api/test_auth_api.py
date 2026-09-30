@@ -50,3 +50,5 @@ def test_register_and_login():
 
     assert login_response.status_code == 200
     assert "access_token" in login_response.json()
+
+

@@ -13,16 +13,10 @@ export const useAuth = () => {
   ) => {
     const res = await login(email, password);
 
-    console.log("LOGIN RESPONSE:", res);
-
     if (res.access_token) {
-  saveToken(res.access_token);
-
-  document.cookie =
-    `careerops_token=${res.access_token}; path=/`;
-
-  router.push("/dashboard");
-}
+      saveToken(res.access_token);
+      router.push("/dashboard");
+    }
 
     return res;
   };

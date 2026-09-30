@@ -30,12 +30,14 @@ UPLOAD_DIR = Path(settings.upload_dir)
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
+MAX_RESUME_TEXT_CHARS = 30000
+MAX_JOB_DESCRIPTION_CHARS = 20000
 
 
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    job_description: str = Form(...),
+    job_description: str = Form(..., min_length=1, max_length=MAX_JOB_DESCRIPTION_CHARS),
     current_user: User = Depends(get_current_user),
 ):
     file_path = None
@@ -66,6 +68,11 @@ async def upload_resume(
 
         # Extract PDF text
         extracted_text = extract_text_from_pdf(str(file_path))
+        if len(extracted_text) > MAX_RESUME_TEXT_CHARS:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Extracted resume text exceeds {MAX_RESUME_TEXT_CHARS} characters.",
+            )
         candidate_name = extract_name(extracted_text)
         tokens = process_text(extracted_text)
 
@@ -166,6 +173,8 @@ async def upload_resume(
         "rewritten_resume": rewritten_resume
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
         # Log the full traceback server-side only — returning it to
         # the client leaks internals (file paths, library versions,

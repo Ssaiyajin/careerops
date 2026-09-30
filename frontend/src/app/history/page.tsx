@@ -1,10 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getHistory } from "@/lib/api";
+import { deleteAccount } from "@/lib/auth/auth";
+import { logout } from "@/lib/auth/token";
 
 export default function HistoryPage() {
+  const router = useRouter();
   const [history, setHistory] = useState<any[]>([]);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Delete your account and all saved resume data? This cannot be undone.")) {
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      logout();
+      router.replace("/");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Account deletion failed.");
+      setDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -61,6 +82,15 @@ export default function HistoryPage() {
           <p className="mt-4 text-white/60">
             Review previous resume analyses and recommendations.
           </p>
+
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deletingAccount}
+            className="mt-6 rounded-md border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+          >
+            {deletingAccount ? "Deleting account..." : "Delete account and saved data"}
+          </button>
 
         </div>
 
@@ -124,7 +154,7 @@ export default function HistoryPage() {
                     </p>
 
                     <p className="text-cyan-400 text-xl font-bold">
-                      {item.job_match_score}
+                      {item.match_score}
                     </p>
                   </div>
 

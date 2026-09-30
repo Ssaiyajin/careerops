@@ -37,3 +37,9 @@ def test_cover_letter_and_export_routes_require_auth():
     for path, body in requests:
         response = client.post(path, json=body)
         assert response.status_code == 401
+
+
+def test_account_deletion_requires_auth():
+    response = client.delete("/api/auth/account")
+
+    assert response.status_code == 401

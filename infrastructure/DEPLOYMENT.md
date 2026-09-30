@@ -236,3 +236,7 @@ gets OOM-killed by Docker instead of the whole box going down.
 - Put a reverse proxy (Caddy/nginx) with TLS in front instead of
   exposing 3000/8000 directly, then drop the `careerops-allow-app`
   firewall rule
+
+## Database schema migrations
+
+The backend image applies `alembic upgrade head` before starting FastAPI. New databases are initialized by the checked-in migrations. The initial revision recognizes the existing `users` and `resume_analysis` tables created by the former `Base.metadata.create_all()` startup, preserves their data, and creates any missing tables and the migration version record. Back up production data before deploying the migration-enabled image. After this baseline, commit schema changes as new Alembic revisions; do not use `create_all()` as a production schema update mechanism.

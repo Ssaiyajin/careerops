@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import UploadPage from "@/app/upload/page";
+import ResultsPage from "@/app/results/page";
 
 const mockPush = jest.fn();
 const mockUploadResume = jest.fn();
@@ -12,10 +13,6 @@ jest.mock("@/lib/api/rewrite", () => ({
   uploadResume: (file: File, jobDescription: string) => mockUploadResume(file, jobDescription)
 }));
 
-jest.mock("@/store/resumeStore", () => ({
-  setResumeData: jest.fn()
-}));
-
 jest.mock("@/lib/auth/auth-guard", () => ({
   useAuthGuard: jest.fn()
 }));
@@ -23,6 +20,7 @@ jest.mock("@/lib/auth/auth-guard", () => ({
 describe("UploadPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
   });
 
   it("renders upload page text", () => {
@@ -39,10 +37,12 @@ describe("UploadPage", () => {
       ats: { ats_score: 85, recommendations: [] },
       experience_level: "Senior",
       entities: { names: [], organizations: [], locations: [], dates: [], emails: [], phones: [] },
-      text_preview: "Sample resume"
+      text_preview: "Sample resume",
+      job_match: { match_score: 72, matched_skills: ["Python"], missing_skills: [] }
     });
 
-    render(<UploadPage />);
+    const { unmount } = render(<UploadPage />);
+    fireEvent.click(screen.getByRole("checkbox"));
 
     const file = new File(["dummy pdf content"], "test.pdf", {
       type: "application/pdf"
@@ -68,6 +68,11 @@ describe("UploadPage", () => {
       },
       { timeout: 5000 }
     );
+
+    unmount();
+    render(<ResultsPage />);
+    expect(await screen.findByRole("heading", { name: "Test User" })).toBeInTheDocument();
+    expect(screen.getByText("85%")).toBeInTheDocument();
   });
 
   it("updates job description", () => {

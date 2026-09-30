@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
 
 from app.auth.auth import hash_password, verify_password
+from app.auth.database import delete_user_account
+from app.auth.dependencies import get_current_user
 from app.auth.jwt import create_access_token
-from app.auth.database import get_user_by_email, create_user
+from app.auth.database import create_user, get_user_by_email
+from app.database.models import User
 
 router = APIRouter()
 
@@ -43,3 +46,9 @@ def login(user: UserLogin):
     token = create_access_token({"sub": user.email})
 
     return {"access_token": token}
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(current_user: User = Depends(get_current_user)):
+    delete_user_account(current_user.id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

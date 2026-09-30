@@ -20,6 +20,7 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
 
   const [jobDescription, setJobDescription] = useState("");
+  const [aiProcessingConsent, setAiProcessingConsent] = useState(false);
 
   const handleFileChange = async (
   event: React.ChangeEvent<HTMLInputElement>
@@ -155,6 +156,18 @@ export default function UploadPage() {
             "
           />
 
+          <label className="mt-5 flex items-start gap-3 text-left text-sm text-white/70">
+            <input
+              type="checkbox"
+              checked={aiProcessingConsent}
+              onChange={(event) => setAiProcessingConsent(event.target.checked)}
+              className="mt-1 accent-green-500"
+            />
+            <span>
+              I understand that my resume text is sent to Google Gemini for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to Gemini. CareerOps stores my extracted resume in account history until I delete my account.
+            </span>
+          </label>
+
         </div>
         {/* Upload Card */}
         <div
@@ -211,6 +224,7 @@ export default function UploadPage() {
               accept=".pdf"
               data-testid="upload-file-input"
               onChange={handleFileChange}
+              disabled={!aiProcessingConsent || uploading}
               className="text-white"
             />
 
