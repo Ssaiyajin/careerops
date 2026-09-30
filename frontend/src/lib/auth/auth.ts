@@ -1,11 +1,9 @@
-import { API_BASE_URL } from "@/lib/api";
-import { getToken } from "@/lib/auth/token";
-
 export async function login(email: string, password: string) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+  const response = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    credentials: "same-origin",
   });
 
   const data = await response.json();
@@ -18,10 +16,11 @@ export async function login(email: string, password: string) {
 }
 
 export async function register(email: string, password: string) {
-  const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+  const response = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
+    credentials: "same-origin",
   });
 
   const data = await response.json();
@@ -34,11 +33,9 @@ export async function register(email: string, password: string) {
 }
 
 export async function deleteAccount() {
-  const response = await fetch(`${API_BASE_URL}/api/auth/account`, {
+  const response = await fetch("/api/auth/account", {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${getToken()}`,
-    },
+    credentials: "same-origin",
   });
 
   if (!response.ok) {

@@ -2,18 +2,37 @@
 
 import Link from "next/link";
 import Container from "./PageContainer";
-import { isLoggedIn, logout } from "@/lib/auth/token";
-import { useRouter } from "next/navigation";
+import { clearSessionHint, logout } from "@/lib/auth/token";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/session", { cache: "no-store" })
+      .then((response) => {
+        if (!active) return;
+        setLoggedIn(response.ok);
+        if (!response.ok) clearSessionHint();
+      })
+      .catch(() => {
+        if (active) setLoggedIn(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  const handleLogout = async () => {
+    await logout();
+    setLoggedIn(false);
     router.push("/");
   };
-
-  const loggedIn = isLoggedIn();
 
   return (
     <nav className="border-b border-white/10 bg-black/80 backdrop-blur-xl">

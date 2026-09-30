@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { register, login } from "@/lib/auth/auth";
-import { saveToken } from "@/lib/auth/token";
+import { markSessionActive } from "@/lib/auth/token";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -37,8 +37,8 @@ export default function RegisterPage() {
         password
       );
 
-      if (loginResult.access_token) {
-        saveToken(loginResult.access_token);
+      if (loginResult.authenticated) {
+        markSessionActive();
         router.push("/dashboard");
       }
     } catch (error) {

@@ -57,10 +57,8 @@ const router = useRouter();
               font-semibold
               text-white
               transition-all
-              hover:scale-105
             "
           >
-            Get Started Free
           </Link>
 
           {!isLoggedIn() && (

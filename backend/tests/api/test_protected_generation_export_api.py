@@ -43,3 +43,9 @@ def test_account_deletion_requires_auth():
     response = client.delete("/api/auth/account")
 
     assert response.status_code == 401
+
+
+def test_session_check_requires_auth():
+    response = client.get("/api/auth/session")
+
+    assert response.status_code == 401

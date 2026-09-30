@@ -20,6 +20,8 @@ services:
   frontend:
     image: ghcr.io/ssaiyajin/careerops-frontend:latest
     container_name: careerops-frontend
+    environment:
+      BACKEND_API_URL: http://backend:8000
     ports:
       - "3000:3000"
     depends_on:

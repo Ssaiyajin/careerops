@@ -1,3 +1,7 @@
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,10 +12,36 @@ from app.api.rewrite import router as rewrite_router
 from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
 from app.api.auth import router as auth_router
+from app.database.database_service import purge_expired_resume_analyses
 
 print("CAREEROPS BACKEND STARTING")
 
-app = FastAPI()
+
+async def _resume_retention_sweeper():
+    while True:
+        try:
+            deleted_count = await asyncio.to_thread(purge_expired_resume_analyses)
+            if deleted_count:
+                logging.info("Purged %s expired resume analyses", deleted_count)
+            retry_after = 24 * 60 * 60
+        except Exception:
+            logging.exception("Resume retention sweep failed")
+            retry_after = 15 * 60
+        await asyncio.sleep(retry_after)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_resume_retention_sweeper())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+app = FastAPI(lifespan=lifespan)
 
 # CORS
 app.add_middleware(

@@ -15,6 +15,9 @@ class Settings:
     # Reject uploads bigger than this before they're even written to
     # disk — an unbounded upload size is a resource-exhaustion vector.
     max_upload_size_mb: int = int(os.getenv("MAX_UPLOAD_SIZE_MB", "10"))
+    resume_retention_days: int = int(os.getenv("RESUME_RETENTION_DAYS", "90"))
+    if resume_retention_days < 1:
+        raise ValueError("RESUME_RETENTION_DAYS must be at least 1")
 
     generation_requests_per_minute: int = int(
         os.getenv("GENERATION_REQUESTS_PER_MINUTE", "2")

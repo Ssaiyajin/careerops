@@ -3,7 +3,7 @@ import { API_BASE_URL } from "@/lib/api";
 import { getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-import { getToken } from "@/lib/auth/token";
+import { type ResumeData, getResumeData } from "@/store/resumeStore";
 import { useEffect, useRef, useState } from "react";
 
 const API_BASE = API_BASE_URL;
@@ -199,8 +199,8 @@ function useGeneratedContent(endpoint: string) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
         },
+        credentials: "same-origin",
         body: JSON.stringify(body),
       });
       const result = await response.json();
@@ -225,18 +225,6 @@ function useGeneratedContent(endpoint: string) {
 /*  Download helpers                                                  */
 /* ------------------------------------------------------------------ */
 
-function downloadTextFile(text: string, filename: string) {
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
 async function downloadDocxFromApi(
   endpoint: string,
   body: Record<string, unknown>,
@@ -246,8 +234,8 @@ async function downloadDocxFromApi(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${getToken()}`,
     },
+    credentials: "same-origin",
     body: JSON.stringify(body),
   });
   if (!response.ok) {
@@ -271,7 +259,7 @@ async function downloadDocxFromApi(
 /* ------------------------------------------------------------------ */
 
 export default function ResultsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ResumeData | null>(null);
 
   useEffect(() => {
     setData(getResumeData());

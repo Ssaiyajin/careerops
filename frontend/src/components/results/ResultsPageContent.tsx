@@ -1,11 +1,8 @@
 "use client";
-import { API_BASE_URL } from "@/lib/api";
 import { useEffect, useState } from "react";
-import { getResumeData } from "@/store/resumeStore";
+import { getResumeData, type ResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-
-type DataShape = Record<string, any>;
 
 type ProgressPanelProps = {
   title: string;
@@ -94,6 +91,7 @@ function ProgressPanel({ title, description, progress, accent, loadingText }: Pr
 
   return (
     <div className={`mt-10 w-full rounded-3xl border p-8 ${accentClasses[accent]}`}>
+      <h2 className="text-center text-xl font-semibold">{title}</h2>
       <div className="mt-6 flex justify-center">
         <div className={`h-12 w-12 animate-spin rounded-full border-4 ${spinnerClasses[accent]}`} />
       </div>
@@ -138,7 +136,7 @@ function ActionButton({
 }
 
 export default function ResultsPageContent() {
-  const [data, setData] = useState<DataShape | null>(null);
+  const [data, setData] = useState<ResumeData | null>(null);
   const [rewriting, setRewriting] = useState(false);
   const [rewrite, setRewrite] = useState("");
   const [loadingCoverLetter, setLoadingCoverLetter] = useState(false);
@@ -175,7 +173,7 @@ export default function ResultsPageContent() {
     outputKey,
   }: {
     endpoint: string;
-    payload: DataShape;
+    payload: Record<string, string>;
     setLoading: (value: boolean) => void;
     setProgress: (value: number | ((prev: number) => number)) => void;
     setOutput: (value: string) => void;
@@ -209,7 +207,7 @@ export default function ResultsPageContent() {
 
   const handleRewrite = async () => {
     await runGeneration({
-      endpoint: "${API_BASE_URL}/api/rewrite-from-text",
+      endpoint: "/api/rewrite-from-text",
       payload: { resume_text: textPreview },
       setLoading: setRewriting,
       setProgress: setRewriteProgress,
@@ -221,7 +219,7 @@ export default function ResultsPageContent() {
 
   const handleCoverLetter = async () => {
     await runGeneration({
-      endpoint: "${API_BASE_URL}/api/cover-letter-from-text",
+      endpoint: "/api/cover-letter-from-text",
       payload: { resume_text: textPreview, job_description: jobDescription },
       setLoading: setLoadingCoverLetter,
       setProgress: setCoverLetterProgress,
@@ -265,7 +263,7 @@ export default function ResultsPageContent() {
 
   const downloadResumeDocx = () =>
     downloadDocx({
-      endpoint: "${API_BASE_URL}/api/export-resume",
+      endpoint: "/api/export-resume",
       payload: {
         candidate_name: candidateName,
         email: candidateEmail,
@@ -278,7 +276,7 @@ export default function ResultsPageContent() {
 
   const downloadCoverLetterDocx = () =>
     downloadDocx({
-      endpoint: "${API_BASE_URL}/api/export-cover-letter",
+      endpoint: "/api/export-cover-letter",
       payload: {
         candidate_name: candidateName,
         email: candidateEmail,

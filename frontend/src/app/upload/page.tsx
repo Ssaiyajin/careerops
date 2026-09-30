@@ -164,7 +164,7 @@ export default function UploadPage() {
               className="mt-1 accent-green-500"
             />
             <span>
-              I understand that my resume text is sent to Google Gemini for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to Gemini. CareerOps stores my extracted resume in account history until I delete my account.
+              I understand that my resume text is sent to Google Gemini for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to Gemini. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
             </span>
           </label>
 

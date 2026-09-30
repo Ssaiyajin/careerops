@@ -1,67 +1,40 @@
 import { clearResumeData } from "@/store/resumeStore";
 
-const TOKEN_KEY = "careerops_token";
+const SESSION_HINT_KEY = "careerops_authenticated";
 
-function getTokenExpiry(token: string): number | null {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4));
-    const bytes = Uint8Array.from(decoded, (character) => character.charCodeAt(0));
-    const claims = JSON.parse(new TextDecoder().decode(bytes));
-    return typeof claims.exp === "number" ? claims.exp : null;
-  } catch {
-    return null;
-  }
-}
-
-function clearTokenCookie() {
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${TOKEN_KEY}=; Max-Age=0; Path=/; SameSite=Lax${secure}`;
-}
-
-export const saveToken = (token: string) => {
+export const markSessionActive = () => {
   if (typeof window === "undefined") return;
 
-  const expiry = getTokenExpiry(token);
-  const maxAge = expiry === null
-    ? 0
-    : Math.floor(expiry - Date.now() / 1000);
-  if (maxAge <= 0) {
-    logout();
-    return;
-  }
-
-  localStorage.setItem("careerops_token", token);
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${TOKEN_KEY}=${token}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
+  localStorage.setItem(SESSION_HINT_KEY, "true");
+  localStorage.removeItem("careerops_token");
+  document.cookie = "careerops_token=; Max-Age=0; Path=/; SameSite=Lax";
 };
 
-export const getToken = () => {
-  if (typeof window === "undefined") return null;
-
-  const token = localStorage.getItem(TOKEN_KEY);
-  const expiry = token ? getTokenExpiry(token) : null;
-  if (!token || expiry === null || expiry <= Date.now() / 1000) {
-    if (token) logout();
-    return null;
-  }
-
-  return token;
-};
-
-export const logout = () => {
+export const clearSessionHint = () => {
   if (typeof window === "undefined") return;
 
-  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(SESSION_HINT_KEY);
+  localStorage.removeItem("careerops_token");
   clearResumeData();
-  clearTokenCookie();
+  document.cookie = "careerops_token=; Max-Age=0; Path=/; SameSite=Lax";
+};
+
+export const logout = async () => {
+  if (typeof window === "undefined") return;
+
+  clearSessionHint();
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+  } catch {
+    // The browser-side session hint is cleared even when the server is offline.
+  }
 };
 
 export const isLoggedIn = () => {
   if (typeof window === "undefined") return false;
 
-  return !!getToken();
+  return localStorage.getItem(SESSION_HINT_KEY) === "true";
 };

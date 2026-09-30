@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("careerops_token");
+  const session = request.cookies.get("careerops_session");
 
   const protectedRoutes = [
     "/dashboard",
@@ -14,7 +14,7 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(route)
   );
 
-  if (isProtected && !token) {
+  if (isProtected && !session) {
     return NextResponse.redirect(
       new URL("/login", request.url)
     );

@@ -48,6 +48,11 @@ def login(user: UserLogin):
     return {"access_token": token}
 
 
+@router.get("/session")
+def check_session(current_user: User = Depends(get_current_user)):
+    return {"authenticated": True}
+
+
 @router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(current_user: User = Depends(get_current_user)):
     delete_user_account(current_user.id)

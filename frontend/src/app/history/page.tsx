@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getHistory } from "@/lib/api";
+import type { ResumeHistoryItem } from "@/lib/api/history";
 import { deleteAccount } from "@/lib/auth/auth";
 import { logout } from "@/lib/auth/token";
 
 export default function HistoryPage() {
   const router = useRouter();
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<ResumeHistoryItem[]>([]);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const handleDeleteAccount = async () => {
@@ -19,7 +20,7 @@ export default function HistoryPage() {
     setDeletingAccount(true);
     try {
       await deleteAccount();
-      logout();
+      await logout();
       router.replace("/");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Account deletion failed.");

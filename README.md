@@ -124,11 +124,11 @@ Career chat, interview preparation, and personalized learning plans remain futur
 
 ### Privacy and Account Lifecycle
 
-Resume text and analysis results are retained in the active database while the account exists; there is no automatic expiry for saved analyses. The History page provides account deletion, which removes the account, saved resume analyses, and usage events. Deletion applies to the active database; managed database backups may retain copies according to the database provider's backup-retention policy.
+Resume text and analysis results are automatically removed from the active database after 90 days (`RESUME_RETENTION_DAYS`, swept daily). The History page also provides immediate account deletion for the account, saved analyses, and usage events. Managed database backups are outside the application; the release policy is a maximum 30-day backup retention, which must be configured and verified with the database provider.
 
 Resume text is sent to Google's Gemini API for recommendations and rewriting. Generating a cover letter also sends resume text and the supplied job description to Gemini. These requests are subject to Google's current service terms and data-handling policies. The upload screen requests consent before analysis.
 
-The browser currently keeps the bearer token in `localStorage` and a JavaScript-readable cookie used only by Next.js middleware for page routing. Logout clears both and the cached resume result; the UI also clears expired JWTs. The backend still validates bearer tokens and expires them after one hour. This is not equivalent to an HttpOnly session: an XSS flaw could read either token copy. Because the deployed frontend and API use separate origins, switching directly to cross-site cookies risks browser cookie restrictions and CSRF. The safer target is a same-origin Next.js backend-for-frontend that sets an HttpOnly, Secure, SameSite cookie, enforces CSRF protection, and proxies API calls; that migration is not implemented yet.
+The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; Docker Compose configures it on the private network.
 
 
 ---

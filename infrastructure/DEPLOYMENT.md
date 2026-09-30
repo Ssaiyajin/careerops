@@ -13,9 +13,9 @@
 Two separate `JWT_SECRET_KEY` values and two separate Neon branch
 connection strings — tokens issued by dev shouldn't validate against
 prod, and dev experiments shouldn't be able to touch production data.
-CORS already allows any `*.vercel.app` origin plus localhost (see
-`backend/app/main.py`), so the same frontend config works against
-either backend.
+Set Vercel's server-side `BACKEND_API_URL` to the matching Render or
+production backend URL. In Compose, the frontend uses the private
+`http://backend:8000` service URL.
 
 The rest of this doc covers the **GCP/prod** side specifically —
 Render's dev setup is just: create the Render service, point it at
@@ -200,9 +200,9 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ## 5. Set up the pipeline
 
 Repo secrets needed (in addition to the GCP ones from step 3):
-`PUBLIC_API_URL` (`http://<public-ip>:8000`, baked into the frontend
-build since Next.js inlines `NEXT_PUBLIC_*` vars), `GCP_HOST` (the
-instance's public IP), `GCP_SSH_PRIVATE_KEY`.
+`GCP_HOST` (the instance's public IP), `GCP_SSH_PRIVATE_KEY`. The
+frontend proxies API requests server-side to `http://backend:8000` on
+the private Compose network; no public API URL is baked into browser code.
 
 Push to `main` → `.github/workflows/pipeline.yml` runs backend tests
 → frontend tests → builds + pushes both images to GHCR → **pauses for
@@ -240,3 +240,20 @@ gets OOM-killed by Docker instead of the whole box going down.
 ## Database schema migrations
 
 The backend image applies `alembic upgrade head` before starting FastAPI. New databases are initialized by the checked-in migrations. The initial revision recognizes the existing `users` and `resume_analysis` tables created by the former `Base.metadata.create_all()` startup, preserves their data, and creates any missing tables and the migration version record. Back up production data before deploying the migration-enabled image. After this baseline, commit schema changes as new Alembic revisions; do not use `create_all()` as a production schema update mechanism.
+
+## Resume and backup retention
+
+The app purges resume analyses older than 90 days once per day (`RESUME_RETENTION_DAYS=90`). Account deletion removes the account's active rows immediately. Managed database backups are controlled by the provider; the release policy is a maximum 30-day backup retention. Configure the Neon/Supabase project to that limit and verify the effective setting before production launch. App-side deletion cannot remove data from an unexpired provider snapshot.
+
+## Staging migration and restore rehearsal
+
+Before production, create an isolated staging database from a recent backup. Keep the source and restore URLs separate and never use the production URL for this rehearsal:
+
+```bash
+pg_dump --format=custom --file=careerops-staging.dump "$SOURCE_DATABASE_URL"
+pg_restore --clean --if-exists --no-owner --dbname="$STAGING_DATABASE_URL" careerops-staging.dump
+psql "$STAGING_DATABASE_URL" -c 'select count(*) from users; select count(*) from resume_analysis;'
+DATABASE_URL="$STAGING_DATABASE_URL" alembic upgrade head
+```
+
+Compare restored counts with the backup source, then run the backend tests and an authenticated PDF upload/history smoke test against staging. Verify the provider can restore the backup and that its configured expiry is at most 30 days. Do not promote until restore and migration results are recorded. This workspace has no staging database credentials, so the live-provider rehearsal remains an operator release gate.

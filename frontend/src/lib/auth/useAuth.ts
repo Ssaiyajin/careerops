@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { login } from "./auth";
-import { saveToken } from "@/lib/auth/token";
+import { markSessionActive } from "@/lib/auth/token";
 
 export const useAuth = () => {
   const router = useRouter();
@@ -13,8 +13,8 @@ export const useAuth = () => {
   ) => {
     const res = await login(email, password);
 
-    if (res.access_token) {
-      saveToken(res.access_token);
+    if (res.authenticated) {
+      markSessionActive();
       router.push("/dashboard");
     }
 
