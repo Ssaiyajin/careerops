@@ -1,35 +1,70 @@
-export async function login(email: string, password: string) {
-  const response = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-    credentials: "same-origin",
-  });
+export type AuthResponse = {
+  error?: string;
+  authenticated?: boolean;
+  [key: string]: unknown;
+};
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    return { error: data.detail || "Login failed" };
+function getErrorMessage(data: unknown, fallback: string) {
+  if (data && typeof data === "object" && "detail" in data) {
+    const detail = (data as { detail?: unknown }).detail;
+    if (typeof detail === "string" && detail.trim()) {
+      return detail;
+    }
   }
 
-  return data;
+  return fallback;
 }
 
-export async function register(email: string, password: string) {
-  const response = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-    credentials: "same-origin",
-  });
+export async function login(email: string, password: string): Promise<AuthResponse> {
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      credentials: "same-origin",
+    });
 
-  const data = await response.json();
+    let data: unknown = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
 
-  if (!response.ok) {
-    return { error: data.detail || "Registration failed" };
+    if (!response.ok) {
+      return { error: getErrorMessage(data, "Incorrect email or password") };
+    }
+
+    return data as AuthResponse;
+  } catch {
+    return { error: "Unable to reach the server. Please check your connection and try again." };
   }
+}
 
-  return data;
+export async function register(email: string, password: string): Promise<AuthResponse> {
+  try {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      credentials: "same-origin",
+    });
+
+    let data: unknown = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
+    if (!response.ok) {
+      return { error: getErrorMessage(data, "Registration failed") };
+    }
+
+    return data as AuthResponse;
+  } catch {
+    return { error: "Unable to reach the server. Please check your connection and try again." };
+  }
 }
 
 export async function deleteAccount() {
@@ -40,6 +75,6 @@ export async function deleteAccount() {
 
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.detail || "Account deletion failed");
+    throw new Error(getErrorMessage(data, "Account deletion failed"));
   }
 }

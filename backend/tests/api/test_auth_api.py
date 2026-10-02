@@ -52,3 +52,45 @@ def test_register_and_login():
     assert "access_token" in login_response.json()
 
 
+def test_forgot_password_and_reset_password():
+    register_response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "reset@test.com",
+            "password": "oldpass123"
+        }
+    )
+
+    assert register_response.status_code == 200
+
+    forgot_response = client.post(
+        "/api/auth/forgot-password",
+        json={"email": "reset@test.com"}
+    )
+
+    assert forgot_response.status_code == 200
+    payload = forgot_response.json()
+    assert "reset_token" in payload
+
+    reset_response = client.post(
+        "/api/auth/reset-password",
+        json={
+            "token": payload["reset_token"],
+            "new_password": "newpass456"
+        }
+    )
+
+    assert reset_response.status_code == 200
+
+    login_response = client.post(
+        "/api/auth/login",
+        json={
+            "email": "reset@test.com",
+            "password": "newpass456"
+        }
+    )
+
+    assert login_response.status_code == 200
+    assert "access_token" in login_response.json()
+
+
