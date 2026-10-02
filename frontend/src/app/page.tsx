@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { isLoggedIn } from "@/lib/auth/token"; // correct path
 
 export default function HomePage() {
-const router = useRouter();
   return (
     <main className="relative flex h-screen w-screen items-center justify-center overflow-hidden bg-black text-white">
 

@@ -40,7 +40,7 @@ test("stores login token only in an HttpOnly session cookie", async () => {
 
   expect(await response.json()).toEqual({ authenticated: true });
   expect(response.headers.get("set-cookie")).toContain("HttpOnly");
-  expect(response.headers.get("set-cookie")).toContain("SameSite=Lax");
+  expect(response.headers.get("set-cookie")).toMatch(/SameSite=lax/i);
 });
 
 test("rejects cross-origin mutation requests", async () => {
