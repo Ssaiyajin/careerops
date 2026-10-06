@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
+from types import SimpleNamespace
 
+from app.auth.dependencies import get_current_user
 from app.main import app
 
 
@@ -49,3 +51,19 @@ def test_session_check_requires_auth():
     response = client.get("/api/auth/session")
 
     assert response.status_code == 401
+
+
+def test_session_check_returns_authenticated_user_email(monkeypatch):
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_current_user,
+        lambda: SimpleNamespace(email="candidate@example.com"),
+    )
+
+    response = client.get("/api/auth/session")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "authenticated": True,
+        "email": "candidate@example.com",
+    }

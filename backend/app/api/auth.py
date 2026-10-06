@@ -137,7 +137,7 @@ def reset_password(payload: ResetPasswordRequest):
 
 @router.get("/session")
 def check_session(current_user: User = Depends(get_current_user)):
-    return {"authenticated": True}
+    return {"authenticated": True, "email": current_user.email}
 
 
 @router.delete("/account", status_code=status.HTTP_204_NO_CONTENT)

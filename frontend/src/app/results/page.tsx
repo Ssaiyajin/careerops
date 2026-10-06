@@ -543,7 +543,7 @@ export default function ResultsPage() {
               Both documents use the job description you added during upload. Add optional guidance to refine either document.
             </p>
 
-            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+            <div className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-left">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium text-cyan-100">
                   Job description from upload
@@ -568,7 +568,7 @@ export default function ResultsPage() {
               )}
             </div>
 
-            <div className="mx-auto mt-5 max-w-3xl">
+            <div className="mx-auto mt-5 w-full max-w-3xl text-left">
               <label
                 className="mb-2 block text-sm font-medium text-white/75"
                 htmlFor="document-improvement-instructions"
@@ -627,7 +627,7 @@ export default function ResultsPage() {
                   <p className="mt-1 text-sm text-white/50">
                     {resumeContent ? "Generated from your uploaded resume" : "Generate an ATS-focused version"}
                   </p>
-                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                  <div className="mx-auto mt-5 flex w-full flex-wrap items-center justify-center gap-4">
                     <button
                       type="button"
                       onClick={() =>
@@ -642,7 +642,7 @@ export default function ResultsPage() {
                         )
                       }
                       disabled={resume.loading || !(resumeContent || textPreview)}
-                      className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-12 min-w-[220px] items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-7 py-3 text-base font-semibold text-white shadow-lg shadow-green-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {resume.loading
                         ? `Improving... ${resume.progress}%`
@@ -662,7 +662,7 @@ export default function ResultsPage() {
                             "CareerOps_Resume.docx"
                           )
                         }
-                        className="inline-flex items-center gap-2 rounded-full border border-green-200/20 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-green-100 transition hover:border-green-200/40 hover:bg-green-300/10"
+                        className="inline-flex min-h-12 min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-green-200/25 bg-white/[0.06] px-6 py-3 text-base font-semibold text-green-100 transition hover:border-green-200/50 hover:bg-green-300/10"
                       >
                         <DownloadIcon />
                         Download
@@ -707,7 +707,7 @@ export default function ResultsPage() {
                       ? "Personalized to the job description you provided"
                       : "A job description is required to tailor this letter"}
                   </p>
-                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                  <div className="mx-auto mt-5 flex w-full flex-wrap items-center justify-center gap-4">
                     <button
                       type="button"
                       onClick={() =>
@@ -722,7 +722,7 @@ export default function ResultsPage() {
                         )
                       }
                       disabled={coverLetter.loading || !jobDescription.trim() || !(resumeContent || textPreview)}
-                      className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-12 min-w-[240px] items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-7 py-3 text-base font-semibold text-white shadow-lg shadow-cyan-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {coverLetter.loading
                         ? `Writing... ${coverLetter.progress}%`
@@ -742,7 +742,7 @@ export default function ResultsPage() {
                             "CareerOps_Cover_Letter.docx"
                           )
                         }
-                        className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-300/10"
+                        className="inline-flex min-h-12 min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-cyan-200/25 bg-white/[0.06] px-6 py-3 text-base font-semibold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/10"
                       >
                         <DownloadIcon />
                         Download

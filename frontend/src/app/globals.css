@@ -350,6 +350,14 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-float {
+    animation: none;
+  }
+
   .careerops-scene-grid,
   .careerops-scene-glow-a,
   .careerops-scene-glow-b,
