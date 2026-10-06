@@ -62,7 +62,7 @@ function ResetPasswordForm() {
 
   return (
     <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-white">
-      <BackgroundEffects variant="auth" />
+      <BackgroundEffects variant="reset" />
       <div className="relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <h1 className="text-3xl font-bold text-green-400">Reset Password</h1>
 
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-white">
-          <BackgroundEffects variant="auth" />
+          <BackgroundEffects variant="reset" />
           <div className="relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
             <h1 className="text-3xl font-bold text-green-400">Reset Password</h1>
             <p className="mt-6 text-white/60">Loading password reset form...</p>

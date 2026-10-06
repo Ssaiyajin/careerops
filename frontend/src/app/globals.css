@@ -133,6 +133,96 @@ body {
   }
 }
 
+@keyframes scene-account-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) rotate(1deg);
+  }
+}
+
+@keyframes scene-register-orbit {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes scene-lock-bob {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translate3d(0, -22px, 0) rotate(3deg);
+  }
+}
+
+@keyframes scene-key-turn {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+
+  50% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes scene-upload-scan {
+  from {
+    transform: translateY(0);
+    opacity: 0.2;
+  }
+
+  to {
+    transform: translateY(130px);
+    opacity: 0.9;
+  }
+}
+
+@keyframes scene-chart-grow {
+  0%,
+  100% {
+    transform: scaleY(0.92);
+  }
+
+  50% {
+    transform: scaleY(1.06);
+  }
+}
+
+@keyframes scene-results-draw {
+  from {
+    stroke-dashoffset: 480;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes scene-history-pulse {
+  0%,
+  100% {
+    fill: transparent;
+    r: 22px;
+  }
+
+  50% {
+    fill: currentColor;
+    fill-opacity: 0.2;
+    r: 30px;
+  }
+}
+
 .careerops-scene-grid {
   animation: scene-grid-drift 32s linear infinite;
   will-change: transform;
@@ -185,6 +275,80 @@ body {
   animation: scene-orbit-a 18s ease-in-out infinite;
 }
 
+[data-scene="home"] .careerops-scene-art {
+  animation: scene-orbit-a 24s ease-in-out infinite;
+}
+
+[data-scene="login"] .careerops-scene-art {
+  animation: scene-account-float 8s ease-in-out infinite;
+}
+
+[data-scene="login"] .careerops-scene-art-ring {
+  transform-origin: 492px 342px;
+  animation: scene-register-orbit 18s linear infinite;
+}
+
+[data-scene="register"] .careerops-scene-art {
+  animation: scene-register-orbit 100s linear infinite;
+}
+
+[data-scene="forgot"] .careerops-scene-art {
+  animation: scene-lock-bob 6s ease-in-out infinite;
+}
+
+[data-scene="forgot"] .careerops-scene-art-ring {
+  transform-origin: 400px 270px;
+  animation: scene-register-orbit 26s linear infinite;
+}
+
+[data-scene="reset"] .careerops-scene-art {
+  transform-origin: center;
+  animation: scene-key-turn 6s ease-in-out infinite;
+}
+
+[data-scene="reset"] .careerops-scene-art-ring {
+  transform-origin: 350px 250px;
+  animation: scene-register-orbit 22s linear infinite reverse;
+}
+
+[data-scene="upload"] .careerops-scene-scan {
+  animation: scene-upload-scan 3.5s ease-in-out infinite alternate;
+}
+
+[data-scene="analysis"] .careerops-scene-spin-a {
+  transform-origin: 400px 250px;
+  animation: scene-register-orbit 20s linear infinite;
+}
+
+[data-scene="analysis"] .careerops-scene-spin-b {
+  transform-origin: 400px 250px;
+  animation: scene-register-orbit 30s linear infinite reverse;
+}
+
+[data-scene="dashboard"] .careerops-scene-chart {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: scene-chart-grow 5s ease-in-out infinite;
+}
+
+[data-scene="results"] .careerops-scene-results-chart path:first-child {
+  stroke-dasharray: 480;
+  stroke-dashoffset: 0;
+  animation: scene-results-draw 6s ease-in-out infinite alternate;
+}
+
+[data-scene="history"] .careerops-scene-timeline-node {
+  animation: scene-history-pulse 3s ease-in-out infinite;
+}
+
+[data-scene="history"] .careerops-scene-timeline-node:nth-of-type(2) {
+  animation-delay: -1s;
+}
+
+[data-scene="history"] .careerops-scene-timeline-node:nth-of-type(3) {
+  animation-delay: -2s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .careerops-scene-grid,
   .careerops-scene-glow-a,
@@ -195,6 +359,17 @@ body {
   .careerops-scene-orbit-b,
   .careerops-scene-node,
   .careerops-scene-diamond {
+    animation: none;
+  }
+
+  [data-scene] .careerops-scene-art,
+  [data-scene] .careerops-scene-art-ring,
+  [data-scene] .careerops-scene-scan,
+  [data-scene] .careerops-scene-spin-a,
+  [data-scene] .careerops-scene-spin-b,
+  [data-scene] .careerops-scene-chart,
+  [data-scene] .careerops-scene-results-chart path:first-child,
+  [data-scene] .careerops-scene-timeline-node {
     animation: none;
   }
 }

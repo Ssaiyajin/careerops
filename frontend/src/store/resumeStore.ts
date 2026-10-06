@@ -10,7 +10,10 @@ export type ResumeData = {
     matched_skills?: string[];
     missing_skills?: string[];
   };
-  semantic_match?: { semantic_match_score?: number | null };
+  semantic_match?: {
+    semantic_match_score?: number | null;
+    semantic_match_method?: "sentence_embeddings" | "text_similarity" | "unavailable";
+  };
   ai_recommendations?: string;
   ats_advice?: { recommendations?: string[]; missing_keywords?: string[] };
   entities?: {
@@ -23,6 +26,7 @@ export type ResumeData = {
   };
   text_preview?: string;
   job_description?: string;
+  rewritten_resume?: string;
 };
 
 let cachedStoredValue: string | null | undefined;

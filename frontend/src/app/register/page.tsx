@@ -83,7 +83,7 @@ export default function RegisterPage() {
 
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-black text-white">
-      <BackgroundEffects variant="auth" />
+      <BackgroundEffects variant="register" />
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-[420px] max-w-[90vw] rounded-3xl border border-white/10 bg-[#151b1d] p-6 shadow-2xl shadow-black/50">

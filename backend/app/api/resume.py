@@ -173,7 +173,8 @@ async def upload_resume(
         "semantic_match": semantic_match_data,
         "ai_recommendations": ai_recommendations,
         "ats_advice": ats_advice,
-        "rewritten_resume": rewritten_resume
+        "rewritten_resume": rewritten_resume,
+        "job_description": job_description,
         }
     
     except HTTPException:

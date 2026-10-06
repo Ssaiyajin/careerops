@@ -169,9 +169,43 @@ function GenerationProgress({
 /*  Generation hook: fake progress + fetch, shared by resume & letter */
 /* ------------------------------------------------------------------ */
 
+function extractGeneratedText(value: unknown): string | null {
+  if (typeof value === "string") {
+    return value.trim() ? value : null;
+  }
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+  for (const key of ["text", "content", "cover_letter", "rewrite", "response"]) {
+    const text = extractGeneratedText(candidate[key]);
+    if (text) return text;
+  }
+  return null;
+}
+
+function responseErrorMessage(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) return value;
+  if (!value || typeof value !== "object") return fallback;
+
+  const record = value as Record<string, unknown>;
+  if (typeof record.detail === "string") return record.detail;
+  if (Array.isArray(record.detail)) {
+    const messages = record.detail
+      .map((item) =>
+        item && typeof item === "object" && "msg" in item
+          ? String(item.msg)
+          : ""
+      )
+      .filter(Boolean);
+    if (messages.length) return messages.join("; ");
+  }
+  return fallback;
+}
+
 function useGeneratedContent(endpoint: string) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [progress, setProgress] = useState<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -182,6 +216,7 @@ function useGeneratedContent(endpoint: string) {
   ) => {
     setProgress(0);
     setLoading(true);
+    setError("");
 
     intervalRef.current = setInterval(() => {
       setProgress((current: number) => {
@@ -202,22 +237,29 @@ function useGeneratedContent(endpoint: string) {
         credentials: "same-origin",
         body: JSON.stringify(body),
       });
-      const result = await response.json();
+      const result: unknown = await response.json();
       if (!response.ok) {
-        throw new Error(result.detail || fallbackText);
+        throw new Error(responseErrorMessage(result, fallbackText));
       }
+      if (!result || typeof result !== "object") {
+        throw new Error(fallbackText);
+      }
+      const generatedText = extractGeneratedText(
+        (result as Record<string, unknown>)[resultKey]
+      );
+      if (!generatedText) throw new Error(fallbackText);
+
       setProgress(100);
-      setContent(result[resultKey] || fallbackText);
+      setContent(generatedText);
     } catch (error) {
-      console.error(error);
-      setContent(error instanceof Error ? error.message : fallbackText);
+      setError(error instanceof Error ? error.message : fallbackText);
     } finally {
       if (intervalRef.current) clearInterval(intervalRef.current);
       setLoading(false);
     }
   };
 
-  return { content, loading, progress, generate };
+  return { content, loading, error, progress, generate };
 }
 
 /* ------------------------------------------------------------------ */
@@ -260,8 +302,11 @@ async function downloadDocxFromApi(
 export default function ResultsPage() {
   const data = useResumeData();
 
+  const initialResume = data?.rewritten_resume || "";
   const resume = useGeneratedContent("/api/rewrite-from-text");
   const coverLetter = useGeneratedContent("/api/cover-letter-from-text");
+  const [activeGeneration, setActiveGeneration] = useState<"resume" | "cover-letter">("resume");
+  const [editedJobDescription, setEditedJobDescription] = useState<string | null>(null);
 
   if (!data) {
     return (
@@ -272,6 +317,8 @@ export default function ResultsPage() {
     );
   }
 
+  const resumeContent = resume.content || initialResume;
+  const jobDescription = editedJobDescription ?? data.job_description ?? "";
   const skills: string[] = data?.skills || [];
   const entities = data?.entities;
   const candidateName = data?.candidate_name || "Unknown Candidate";
@@ -282,11 +329,11 @@ export default function ResultsPage() {
   const matchedSkills: string[] = data?.job_match?.matched_skills || [];
   const missingSkills: string[] = data?.job_match?.missing_skills || [];
   const matchScore = data?.job_match?.match_score || 0;
-  const semanticScore = data?.semantic_match?.semantic_match_score || 0;
+  const semanticScore = data?.semantic_match?.semantic_match_score;
+  const semanticMethod = data?.semantic_match?.semantic_match_method;
   const careerInsights = data?.ai_recommendations || "";
   const atsAdvice = data?.ats_advice || {};
   const textPreview = data?.text_preview || "";
-  const jobDescription = data?.job_description || "";
 
   const candidateInfo = { candidate_name: candidateName, email: candidateEmail, location: candidateLocation, skills };
 
@@ -333,9 +380,9 @@ export default function ResultsPage() {
               barTo="to-blue-500"
             />
             <StatCard
-              label="Semantic Match"
-              value={`${semanticScore}%`}
-              percent={semanticScore}
+              label={semanticMethod === "text_similarity" ? "Text Similarity" : "Semantic Match"}
+              value={typeof semanticScore === "number" ? `${semanticScore}%` : "N/A"}
+              percent={semanticScore ?? 0}
               valueClassName="text-yellow-400"
               barFrom="from-yellow-400"
               barTo="to-orange-500"
@@ -491,138 +538,203 @@ export default function ResultsPage() {
             </div>
           </GlassCard>
 
-          {/* ACTIONS */}
-          <div className="mt-10 flex justify-center gap-6">
-            <button
-              onClick={() =>
-                resume.generate(
-                  { resume_text: textPreview },
-                  "rewrite",
-                  "Failed to generate resume rewrite."
-                )
-              }
-              disabled={resume.loading}
-              className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-4 text-white font-semibold transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {resume.loading
-                ? `Generating Resume... ${resume.progress}%`
-                : "Generate Improved Resume"}
-            </button>
+          <GlassCard className="mt-14" title="Your Career Documents">
+            <p className="mt-2 text-center text-sm text-white/55">
+              Your improved resume is ready. Switch documents or regenerate either one whenever you update your job target.
+            </p>
 
-            <button
-              onClick={() =>
-                coverLetter.generate(
-                  { resume_text: textPreview, job_description: jobDescription },
-                  "cover_letter",
-                  "Failed to generate cover letter."
-                )
-              }
-              disabled={coverLetter.loading}
-              className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-white font-semibold transition-all hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
+            <div
+              role="tablist"
+              aria-label="Career documents"
+              className="mt-7 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/30 p-2"
             >
-              {coverLetter.loading
-                ? `Generating Cover Letter... ${coverLetter.progress}%`
-                : "Generate Cover Letter"}
-            </button>
-          </div>
-
-          {/* AI REWRITTEN RESUME */}
-          {resume.loading ? (
-            <GlassCard
-              className="mt-14"
-              title="AI Improving Resume"
-              titleClassName="text-green-300"
-              borderClassName="border-green-500/20"
-              bgClassName="bg-green-500/5"
-            >
-              <GenerationProgress
-                label="Optimizing ATS Score..."
-                percent={resume.progress}
-                colorFrom="from-green-400"
-                colorTo="to-emerald-500"
-                ringColor="border-green-500/20 border-t-green-400"
-                textColor="text-green-300"
-              />
-            </GlassCard>
-          ) : (
-            resume.content && (
-              <GlassCard
-                className="mt-14"
-                title="AI Improved Resume"
-                titleClassName="text-green-300"
-                borderClassName="border-green-500/20"
-                bgClassName="bg-green-500/5"
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeGeneration === "resume"}
+                onClick={() => setActiveGeneration("resume")}
+                className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
+                  activeGeneration === "resume"
+                    ? "bg-green-400/15 text-green-200 ring-1 ring-green-300/30"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
               >
-                <ScrollBox maxHeight="420px" className="bg-black/30">
-                  {resume.content}
-                </ScrollBox>
-              </GlassCard>
-            )
-          )}
-
-          {resume.content && !resume.loading && (
-            <button
-              onClick={() =>
-                downloadDocxFromApi(
-                  "/api/export-resume",
-                  { ...candidateInfo, resume_text: resume.content },
-                  "CareerOps_Resume.docx"
-                )
-              }
-              className="mt-6 rounded-full bg-green-500 px-6 py-3 font-semibold text-white transition-all hover:scale-105"
-            >
-              Download DOCX Resume
-            </button>
-          )}
-
-          {/* AI COVER LETTER */}
-          {coverLetter.loading ? (
-            <GlassCard
-              className="mt-14"
-              title="AI Generating Cover Letter"
-              titleClassName="text-cyan-300"
-              borderClassName="border-cyan-500/20"
-              bgClassName="bg-cyan-500/5"
-            >
-              <GenerationProgress
-                label="Writing Personalized Cover Letter..."
-                percent={coverLetter.progress}
-                colorFrom="from-cyan-400"
-                colorTo="to-blue-500"
-                ringColor="border-cyan-500/20 border-t-cyan-400"
-                textColor="text-cyan-300"
-              />
-            </GlassCard>
-          ) : (
-            coverLetter.content && (
-              <GlassCard
-                className="mt-14"
-                title="Generated Cover Letter"
-                titleClassName="text-cyan-300"
-                borderClassName="border-cyan-500/20"
-                bgClassName="bg-cyan-500/5"
+                Improved Resume {resumeContent ? "✓" : ""}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeGeneration === "cover-letter"}
+                onClick={() => setActiveGeneration("cover-letter")}
+                className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
+                  activeGeneration === "cover-letter"
+                    ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30"
+                    : "text-white/60 hover:bg-white/5 hover:text-white"
+                }`}
               >
-                <ScrollBox maxHeight="420px" className="bg-black/30">
-                  {coverLetter.content}
-                </ScrollBox>
-              </GlassCard>
-            )
-          )}
+                Cover Letter {coverLetter.content ? "✓" : ""}
+              </button>
+            </div>
 
-          {coverLetter.content && !coverLetter.loading && (
-            <button
-              onClick={() =>
-                downloadDocxFromApi(
-                  "/api/export-cover-letter",
-                  { ...candidateInfo, cover_letter_text: coverLetter.content },
-                  "CareerOps_Cover_Letter.docx"
-                )
-              }
-              className="mt-6 rounded-full bg-cyan-500 px-6 py-3 font-semibold text-white transition-all hover:scale-105"
-            >
-              Download Cover Letter Docx
-            </button>
-          )}
+            {activeGeneration === "resume" ? (
+              <section role="tabpanel" className="mt-6">
+                <label className="mb-2 block text-sm font-medium text-white/70" htmlFor="cover-letter-job-description">
+                  Target job description
+                </label>
+                <textarea
+                  id="cover-letter-job-description"
+                  value={jobDescription}
+                  onChange={(event) => setEditedJobDescription(event.target.value)}
+                  placeholder="Paste the job description to personalize the cover letter..."
+                  className="mb-6 min-h-32 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
+                />
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-green-200">
+                      AI-improved resume
+                    </h3>
+                    <p className="mt-1 text-sm text-white/50">
+                      {resumeContent ? "Generated from your uploaded resume" : "Generate an ATS-focused version"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      resume.generate(
+                        { resume_text: resumeContent || textPreview },
+                        "rewrite",
+                        "Could not generate an improved resume."
+                      )
+                    }
+                    disabled={resume.loading || !(resumeContent || textPreview)}
+                    className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resume.loading
+                      ? `Improving... ${resume.progress}%`
+                      : resumeContent
+                        ? "Regenerate resume"
+                        : "Generate resume"}
+                  </button>
+                </div>
+
+                {resume.error && (
+                  <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+                    {resume.error}
+                  </p>
+                )}
+                {resume.loading ? (
+                  <GenerationProgress
+                    label="Optimizing your resume..."
+                    percent={resume.progress}
+                    colorFrom="from-green-400"
+                    colorTo="to-emerald-500"
+                    ringColor="border-green-500/20 border-t-green-400"
+                    textColor="text-green-300"
+                  />
+                ) : resumeContent ? (
+                  <ScrollBox maxHeight="520px" className="bg-black/30">
+                    {resumeContent}
+                  </ScrollBox>
+                ) : (
+                  <p className="mt-6 rounded-xl border border-white/10 bg-black/20 p-6 text-center text-white/55">
+                    Generate an improved resume to preview and download it here.
+                  </p>
+                )}
+
+                {resumeContent && !resume.loading && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadDocxFromApi(
+                        "/api/export-resume",
+                        { ...candidateInfo, resume_text: resumeContent },
+                        "CareerOps_Resume.docx"
+                      )
+                    }
+                    className="mt-5 rounded-full border border-green-300/30 bg-green-400/10 px-5 py-3 font-semibold text-green-100 transition hover:bg-green-400/20"
+                  >
+                    Download resume (.docx)
+                  </button>
+                )}
+              </section>
+            ) : (
+              <section role="tabpanel" className="mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-cyan-200">
+                      Job-tailored cover letter
+                    </h3>
+                    <p className="mt-1 text-sm text-white/50">
+                      {jobDescription
+                        ? "Personalized to the job description you provided"
+                        : "Add a job description during resume upload to tailor this letter"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      coverLetter.generate(
+                        {
+                          resume_text: resumeContent || textPreview,
+                          job_description: jobDescription,
+                        },
+                        "cover_letter",
+                        "Could not generate a cover letter."
+                      )
+                    }
+                    disabled={coverLetter.loading || !jobDescription.trim()}
+                    className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {coverLetter.loading
+                      ? `Writing... ${coverLetter.progress}%`
+                      : coverLetter.content
+                        ? "Regenerate cover letter"
+                        : "Generate cover letter"}
+                  </button>
+                </div>
+
+                {coverLetter.error && (
+                  <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+                    {coverLetter.error}
+                  </p>
+                )}
+                {coverLetter.loading ? (
+                  <GenerationProgress
+                    label="Writing your tailored cover letter..."
+                    percent={coverLetter.progress}
+                    colorFrom="from-cyan-400"
+                    colorTo="to-blue-500"
+                    ringColor="border-cyan-500/20 border-t-cyan-400"
+                    textColor="text-cyan-300"
+                  />
+                ) : coverLetter.content ? (
+                  <ScrollBox maxHeight="520px" className="bg-black/30">
+                    {coverLetter.content}
+                  </ScrollBox>
+                ) : (
+                  <p className="mt-6 rounded-xl border border-white/10 bg-black/20 p-6 text-center text-white/55">
+                    Generate a tailored cover letter for your target role.
+                  </p>
+                )}
+
+                {coverLetter.content && !coverLetter.loading && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadDocxFromApi(
+                        "/api/export-cover-letter",
+                        { ...candidateInfo, cover_letter_text: coverLetter.content },
+                        "CareerOps_Cover_Letter.docx"
+                      )
+                    }
+                    className="mt-5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
+                  >
+                    Download cover letter (.docx)
+                  </button>
+                )}
+              </section>
+            )}
+          </GlassCard>
         </div>
 
         <div className="mt-10 pb-10 text-center text-white/40">

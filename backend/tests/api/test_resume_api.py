@@ -147,6 +147,10 @@ def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers)
     )
 
     assert response.status_code == 200
+    assert response.json()["job_description"] == (
+        "Looking for Python, Kubernetes, and AWS."
+    )
+    assert response.json()["rewritten_resume"] == "Rewritten resume"
     job_match = response.json()["job_match"]
     assert job_match["match_score"] == 33
     assert set(job_match["matched_skills"]) == {"python"}
