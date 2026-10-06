@@ -13,51 +13,51 @@ const variantStyles: Record<
 > = {
   home: {
     wash: "from-[#020806] via-[#03150d] to-[#03090b]",
-    orbA: "bg-emerald-500/20",
-    orbB: "bg-cyan-400/15",
-    orbC: "bg-violet-500/10",
+    orbA: "bg-emerald-500/35",
+    orbB: "bg-cyan-400/30",
+    orbC: "bg-violet-500/20",
     line: "border-emerald-300/20",
   },
   auth: {
     wash: "from-[#07050b] via-[#10101a] to-[#03100c]",
-    orbA: "bg-violet-500/20",
-    orbB: "bg-emerald-400/15",
-    orbC: "bg-cyan-400/10",
+    orbA: "bg-violet-500/35",
+    orbB: "bg-emerald-400/30",
+    orbC: "bg-cyan-400/20",
     line: "border-violet-300/20",
   },
   dashboard: {
     wash: "from-[#020807] via-[#061711] to-[#06101a]",
-    orbA: "bg-green-400/20",
-    orbB: "bg-cyan-400/15",
-    orbC: "bg-blue-500/10",
+    orbA: "bg-green-400/35",
+    orbB: "bg-cyan-400/30",
+    orbC: "bg-blue-500/20",
     line: "border-cyan-300/20",
   },
   upload: {
     wash: "from-[#030a09] via-[#071611] to-[#101009]",
-    orbA: "bg-teal-400/20",
-    orbB: "bg-green-400/15",
-    orbC: "bg-amber-400/10",
+    orbA: "bg-teal-400/35",
+    orbB: "bg-green-400/30",
+    orbC: "bg-amber-400/20",
     line: "border-teal-300/20",
   },
   analysis: {
     wash: "from-[#070611] via-[#07131a] to-[#03110b]",
-    orbA: "bg-violet-500/20",
-    orbB: "bg-cyan-400/15",
-    orbC: "bg-green-400/10",
+    orbA: "bg-violet-500/35",
+    orbB: "bg-cyan-400/30",
+    orbC: "bg-green-400/20",
     line: "border-violet-300/20",
   },
   results: {
     wash: "from-[#030a08] via-[#071510] to-[#08101a]",
-    orbA: "bg-emerald-400/20",
-    orbB: "bg-blue-400/15",
-    orbC: "bg-amber-400/10",
+    orbA: "bg-emerald-400/35",
+    orbB: "bg-blue-400/30",
+    orbC: "bg-amber-400/20",
     line: "border-emerald-300/20",
   },
   history: {
     wash: "from-[#030810] via-[#07121a] to-[#0b0712]",
-    orbA: "bg-cyan-400/20",
-    orbB: "bg-violet-500/15",
-    orbC: "bg-green-400/10",
+    orbA: "bg-cyan-400/35",
+    orbB: "bg-violet-500/30",
+    orbC: "bg-green-400/20",
     line: "border-cyan-300/20",
   },
 };
@@ -70,12 +70,13 @@ export default function BackgroundEffects({
   const styles = variantStyles[variant];
 
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <div className={`absolute inset-0 bg-gradient-to-br ${styles.wash}`} />
-      <div className="careerops-scene-grid absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(148,163,184,0.09)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.09)_1px,transparent_1px)] [background-size:64px_64px] [mask-image:linear-gradient(to_bottom,black,transparent_95%)]" />
-      <div className={`careerops-scene-glow careerops-scene-glow-a absolute -left-40 top-[8%] h-[32rem] w-[32rem] rounded-full ${styles.orbA} blur-[140px]`} />
-      <div className={`careerops-scene-glow careerops-scene-glow-b absolute -right-40 top-[34%] h-[30rem] w-[30rem] rounded-full ${styles.orbB} blur-[140px]`} />
-      <div className={`careerops-scene-glow careerops-scene-glow-c absolute bottom-[-18rem] left-[28%] h-[36rem] w-[36rem] rounded-full ${styles.orbC} blur-[150px]`} />
+      <div className="careerops-scene-grid absolute -inset-[50%] opacity-40 [background-image:linear-gradient(rgba(148,163,184,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.12)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:radial-gradient(ellipse_at_center,black_10%,transparent_75%)]" />
+      <div className={`careerops-scene-glow careerops-scene-glow-a absolute -left-[18vw] top-[4vh] h-[68vh] w-[68vh] min-h-[28rem] min-w-[28rem] rounded-full ${styles.orbA} blur-[110px]`} />
+      <div className={`careerops-scene-glow careerops-scene-glow-b absolute -right-[20vw] top-[22vh] h-[64vh] w-[64vh] min-h-[26rem] min-w-[26rem] rounded-full ${styles.orbB} blur-[110px]`} />
+      <div className={`careerops-scene-glow careerops-scene-glow-c absolute bottom-[-48vh] left-[24vw] h-[76vh] w-[76vh] min-h-[30rem] min-w-[30rem] rounded-full ${styles.orbC} blur-[120px]`} />
+      <div className="careerops-scene-sweep absolute -inset-x-1/2 top-[-40%] h-[180%] w-[200%] bg-[linear-gradient(115deg,transparent_35%,rgba(110,231,183,0.035)_48%,rgba(103,232,249,0.07)_50%,rgba(196,181,253,0.035)_52%,transparent_65%)]" />
 
       <div className={`careerops-scene-orbit careerops-scene-orbit-a absolute left-[8%] top-[12%] h-[76%] w-[84%] rounded-[48%] border ${styles.line} opacity-40`} />
       <div className={`careerops-scene-orbit careerops-scene-orbit-b absolute left-[18%] top-[20%] h-[58%] w-[64%] rounded-[50%] border ${styles.line} opacity-30`} />

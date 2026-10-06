@@ -54,24 +54,47 @@ body {
 
 @keyframes scene-grid-drift {
   from {
-    background-position: 0 0, 0 0;
+    transform: translate3d(0, 0, 0) rotate(-5deg);
   }
 
   to {
-    background-position: 64px 32px, 32px 64px;
+    transform: translate3d(72px, 72px, 0) rotate(-5deg);
   }
 }
 
 @keyframes scene-glow-breathe {
   0%,
   100% {
-    opacity: 0.7;
-    scale: 0.94;
+    transform: translate3d(-3vw, -2vh, 0) scale(0.9);
+    opacity: 0.66;
   }
 
   50% {
+    transform: translate3d(8vw, 7vh, 0) scale(1.16);
     opacity: 1;
-    scale: 1.06;
+  }
+}
+
+@keyframes scene-glow-c {
+  0%,
+  100% {
+    transform: translate3d(6vw, -5vh, 0) scale(0.92);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: translate3d(-8vw, -13vh, 0) scale(1.2);
+    opacity: 0.95;
+  }
+}
+
+@keyframes scene-sweep {
+  from {
+    transform: translate3d(-18%, -4%, 0) rotate(0deg);
+  }
+
+  to {
+    transform: translate3d(18%, 4%, 0) rotate(0deg);
   }
 }
 
@@ -111,19 +134,28 @@ body {
 }
 
 .careerops-scene-grid {
-  animation: scene-grid-drift 38s linear infinite;
+  animation: scene-grid-drift 32s linear infinite;
+  will-change: transform;
 }
 
 .careerops-scene-glow-a {
-  animation: scene-glow-breathe 13s ease-in-out infinite;
+  animation: scene-glow-breathe 18s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 .careerops-scene-glow-b {
-  animation: scene-glow-breathe 16s ease-in-out -5s infinite;
+  animation: scene-glow-c 23s ease-in-out -8s infinite;
+  will-change: transform, opacity;
 }
 
 .careerops-scene-glow-c {
-  animation: scene-glow-breathe 19s ease-in-out -9s infinite;
+  animation: scene-glow-breathe 27s ease-in-out -12s infinite;
+  will-change: transform, opacity;
+}
+
+.careerops-scene-sweep {
+  animation: scene-sweep 26s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 .careerops-scene-orbit-a {
@@ -158,6 +190,7 @@ body {
   .careerops-scene-glow-a,
   .careerops-scene-glow-b,
   .careerops-scene-glow-c,
+  .careerops-scene-sweep,
   .careerops-scene-orbit-a,
   .careerops-scene-orbit-b,
   .careerops-scene-node,
