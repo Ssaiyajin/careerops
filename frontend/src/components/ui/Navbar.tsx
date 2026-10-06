@@ -15,7 +15,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
-  const [visible, setVisible] = useState(true);
+  const [scrollY, setScrollY] = useState(0);
+  const [scrollingUp, setScrollingUp] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -45,14 +46,13 @@ export default function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
     let previousScrollY = window.scrollY;
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      setVisible(currentScrollY < 48 || currentScrollY < previousScrollY);
+      const movingUp = currentScrollY < previousScrollY - 2;
+      setScrollY(currentScrollY);
+      setScrollingUp(movingUp);
+      if (movingUp && currentScrollY > 120) setMenuOpen(true);
       previousScrollY = currentScrollY;
     };
 
@@ -60,120 +60,123 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
   const handleLogout = async () => {
     await logout();
     setLoggedIn(false);
     setEmail("");
+    setMenuOpen(false);
     router.push("/");
   };
 
+  const userInitial = email.trim().charAt(0).toUpperCase() || "?";
+  const showScrollArrow = loggedIn && scrollY > 120 && scrollingUp;
+
   return (
-    <nav
-      aria-label="Main navigation"
-      aria-hidden={!visible}
-      inert={!visible}
-      className={`fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-xl transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${
-        visible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-      }`}
-    >
-      <div className="mx-auto flex min-h-16 w-full max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3 sm:px-8">
+    <header className="pointer-events-none fixed inset-x-0 top-0 z-50">
+      <div className="flex w-full items-start justify-between px-5 pt-4 sm:px-8">
         <Link
-          href="/"
-          className="shrink-0 text-xl font-bold tracking-tight text-white"
+          href={loggedIn ? "/dashboard" : "/"}
+          aria-label={loggedIn ? "CareerOps AI dashboard" : "CareerOps AI home"}
+          className="pointer-events-auto rounded-full border border-white/10 bg-slate-950/55 px-4 py-2 text-lg font-bold tracking-tight text-white shadow-lg shadow-black/10 backdrop-blur-md transition hover:border-green-300/30 hover:bg-slate-950/75"
         >
-          CareerOps
-          <span className="text-green-400"> AI</span>
+          CareerOps<span className="text-green-400"> AI</span>
         </Link>
 
-        <div className="flex min-w-0 items-center justify-end gap-3 sm:gap-5">
-          {loggedIn ? (
-            <>
-              <Link
-                href="/dashboard"
-                className="hidden text-white/70 transition hover:text-white sm:inline-flex"
-              >
-                Dashboard
-              </Link>
-
-              <Link
-                href="/upload"
-                className="hidden text-white/70 transition hover:text-white sm:inline-flex"
-              >
-                Upload
-              </Link>
-
-              <Link
-                href="/history"
-                className="hidden text-white/70 transition hover:text-white sm:inline-flex"
-              >
-                History
-              </Link>
-
-              <span
-                className="hidden max-w-56 truncate rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/65 sm:inline-flex"
-                title={email || "Signed in"}
-              >
-                {email || "Signed in"}
-              </span>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                  className="hidden rounded-full border border-red-400/25 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/10 sm:inline-flex"
-              >
-                  Log out
-                </button>
-                <button
-                  type="button"
-                  aria-expanded={menuOpen}
-                  aria-controls="mobile-account-menu"
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className="rounded-full border border-white/15 px-4 py-2 text-sm text-white sm:hidden"
-                >
-                  {menuOpen ? "Close" : "Menu"}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-sm text-white/70 transition hover:text-white sm:text-base"
-                >
-                  Login
-                </Link>
-
-                <Link
-                  href="/register"
-                  className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-2 text-sm font-medium text-white sm:px-5 sm:text-base"
-                >
-                  Get Started
-                </Link>
-              </>
-            )}
-          </div>
-      </div>
-      {loggedIn && menuOpen && (
-          <div
-            id="mobile-account-menu"
-            className="border-t border-white/10 bg-black/95 px-5 py-4 sm:hidden"
+        {loggedIn && (
+          <button
+            type="button"
+            aria-label={`Open account menu for ${email || "signed-in user"}`}
+            aria-expanded={menuOpen}
+            aria-controls="careerops-account-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+            className="pointer-events-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-green-200/35 bg-slate-950/65 text-base font-bold text-green-100 shadow-lg shadow-black/20 backdrop-blur-md transition hover:scale-105 hover:border-green-200/70 hover:bg-green-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-300"
+            title={email || "Account"}
           >
-            <p className="mb-4 truncate text-sm text-white/65">
-              Signed in as <span className="text-white">{email || "User"}</span>
-            </p>
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <Link href="/dashboard" className="text-white/75 hover:text-white">Dashboard</Link>
-              <Link href="/upload" className="text-white/75 hover:text-white">Upload</Link>
-              <Link href="/history" className="text-white/75 hover:text-white">History</Link>
+            {userInitial}
+          </button>
+        )}
+      </div>
+
+      {loggedIn && (
+        <>
+          <button
+            type="button"
+            aria-label={menuOpen ? "Close dashboard menu" : "Open dashboard menu"}
+            aria-expanded={menuOpen}
+            aria-controls="careerops-account-menu"
+            aria-hidden={!showScrollArrow}
+            tabIndex={showScrollArrow ? 0 : -1}
+            onClick={() => setMenuOpen((open) => !open)}
+            className={`pointer-events-auto absolute left-1/2 top-3 flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/60 text-white/80 shadow-lg shadow-black/20 backdrop-blur-md transition-[opacity,transform,background-color] duration-300 hover:border-green-200/40 hover:bg-green-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-300 motion-reduce:transition-none ${
+              showScrollArrow
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none -translate-y-4 opacity-0"
+            }`}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              fill="none"
+              className="h-5 w-5 animate-nav-arrow motion-reduce:animate-none"
+            >
+              <path
+                d="m4.75 12.25 5.25-5.5 5.25 5.5"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div
+            id="careerops-account-menu"
+            aria-hidden={!menuOpen}
+            inert={!menuOpen}
+            className={`pointer-events-auto absolute right-5 top-[4.5rem] w-[min(20rem,calc(100vw-2.5rem))] origin-top-right rounded-2xl border border-white/10 bg-slate-950/90 p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl transition-[opacity,transform,visibility] duration-200 ease-out motion-reduce:transition-none sm:right-8 ${
+              menuOpen
+                ? "visible translate-y-0 scale-100 opacity-100"
+                : "invisible -translate-y-2 scale-95 opacity-0"
+            }`}
+          >
+            <div className="mb-3 border-b border-white/10 px-2 pb-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+                CareerOps dashboard
+              </p>
+              <p className="mt-1 truncate text-sm text-white/75" title={email}>
+                {email}
+              </p>
+            </div>
+            <div className="grid gap-1">
+              {[
+                { href: "/dashboard", label: "Dashboard" },
+                { href: "/upload", label: "Upload resume" },
+                { href: "/history", label: "Analysis history" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-sm text-white/75 transition hover:bg-white/[0.07] hover:text-white"
+                >
+                  {item.label}
+                </Link>
+              ))}
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-full border border-red-400/25 px-4 py-2 font-medium text-red-300 transition hover:bg-red-500/10"
+                className="mt-1 rounded-xl border border-red-300/15 px-3 py-2.5 text-left text-sm font-medium text-red-200 transition hover:bg-red-400/10"
               >
                 Log out
               </button>
             </div>
           </div>
+        </>
       )}
-    </nav>
+    </header>
   );
 }

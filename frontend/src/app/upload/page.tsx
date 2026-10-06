@@ -100,7 +100,7 @@ export default function UploadPage() {
 
     
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-clip overflow-y-visible bg-black text-white">
 
       <BackgroundEffects variant="upload" />
 
@@ -113,7 +113,7 @@ export default function UploadPage() {
             AI Resume Upload
           </div>
 
-          <h1 className="text-6xl font-bold tracking-tight">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             Upload Resume
           </h1>
 
@@ -124,9 +124,9 @@ export default function UploadPage() {
 
         </div>
         {/* JOB DESCRIPTION */}
-        <div className="mt-12 w-full max-w-4xl">
+        <div className="mt-12 w-full max-w-5xl">
 
-          <label className="mb-3 block text-left text-sm text-white/70">
+          <label className="mb-3 block text-center text-sm text-white/70">
             Paste Job Description
           </label>
 
@@ -158,12 +158,13 @@ export default function UploadPage() {
           mt-14
           mb-20
           w-full
-          max-w-4xl
+          max-w-5xl
           rounded-3xl
           border
           border-green-400/20
           bg-white/5
-          p-8
+          p-5
+          sm:p-8
           backdrop-blur-xl
           transition-all
           duration-500
@@ -177,7 +178,8 @@ export default function UploadPage() {
             group
             relative
             flex
-            h-72
+            h-64
+            sm:h-72
             w-full
             cursor-pointer
             flex-col
@@ -239,7 +241,7 @@ export default function UploadPage() {
 
             {/* File Name */}
             {fileName && (
-              <div className="mt-6 rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300 ">
+              <div className="mt-6 max-w-[90%] truncate rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300 ">
                 {fileName}
               </div>
             )}

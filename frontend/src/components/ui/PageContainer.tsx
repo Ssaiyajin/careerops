@@ -14,11 +14,12 @@ export default function PageContainer({ children }: Props) {
         w-full
         items-center
         justify-center
-        px-6
+        px-4
+        sm:px-6
         py-20
       "
     >
-      <div className="w-full max-w-6xl overflow-hidden">
+      <div className="w-full max-w-6xl min-w-0">
         {children}
       </div>
     </div>

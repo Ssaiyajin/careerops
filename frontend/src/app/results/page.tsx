@@ -28,7 +28,7 @@ function GlassCard({
 }) {
   return (
     <div
-      className={`w-full rounded-3xl border ${borderClassName} ${bgClassName} p-8 backdrop-blur-xl ${className}`}
+      className={`w-full min-w-0 rounded-3xl border ${borderClassName} ${bgClassName} p-5 backdrop-blur-xl sm:p-8 ${className}`}
     >
       {title && (
         <h2 className={`text-2xl text-center font-semibold ${titleClassName}`}>
@@ -338,7 +338,7 @@ export default function ResultsPage() {
   const candidateInfo = { candidate_name: candidateName, email: candidateEmail, location: candidateLocation, skills };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-clip overflow-y-visible bg-black text-white">
       <BackgroundEffects variant="results" />
 
       <PageContainer>
@@ -348,7 +348,7 @@ export default function ResultsPage() {
             <div className="mb-8 items-center justify-center rounded-full border border-green-400/30 bg-green-400/5 px-14 pt-3 pb-[14px] text-base text-green-300 backdrop-blur-sm">
               AI Analysis Complete
             </div>
-            <h1 className="text-6xl font-bold tracking-tight">{candidateName}</h1>
+            <h1 className="break-words text-4xl font-bold tracking-tight sm:text-6xl">{candidateName}</h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-white/70">
               AI successfully analyzed your resume and extracted skills,
               entities, and career insights dynamically.
@@ -543,82 +543,83 @@ export default function ResultsPage() {
               Both documents use the job description you added during upload. Add optional guidance to refine either document.
             </p>
 
-            <div className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-left">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-medium text-cyan-100">
-                  Job description from upload
-                </p>
-                <span className="rounded-full border border-cyan-200/15 bg-cyan-100/5 px-3 py-1 text-xs text-cyan-100/70">
-                  {jobDescription ? "Applied to both documents" : "Not provided"}
-                </span>
-              </div>
-              {jobDescription ? (
-                <details className="mt-2">
-                  <summary className="w-fit cursor-pointer text-xs text-white/50 transition hover:text-white/80">
-                    View uploaded job description
-                  </summary>
-                  <p className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap text-sm text-white/65">
-                    {jobDescription}
+            <div className="mx-auto w-full max-w-4xl text-center">
+              <div className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-center">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <p className="text-sm font-medium text-cyan-100">
+                    Job description from upload
                   </p>
-                </details>
-              ) : (
-                <p className="mt-2 text-sm text-white/50">
-                  Start a new resume upload with a job description to tailor both documents.
-                </p>
-              )}
-            </div>
+                  <span className="rounded-full border border-cyan-200/15 bg-cyan-100/5 px-3 py-1 text-xs text-cyan-100/70">
+                    {jobDescription ? "Applied to both documents" : "Not provided"}
+                  </span>
+                </div>
+                {jobDescription ? (
+                  <details className="mt-2">
+                    <summary className="mx-auto w-fit cursor-pointer text-xs text-white/50 transition hover:text-white/80">
+                      View uploaded job description
+                    </summary>
+                    <p className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap text-left text-sm text-white/65">
+                      {jobDescription}
+                    </p>
+                  </details>
+                ) : (
+                  <p className="mt-2 text-sm text-white/50">
+                    Start a new resume upload with a job description to tailor both documents.
+                  </p>
+                )}
+              </div>
 
-            <div className="mx-auto mt-5 w-full max-w-3xl text-left">
-              <label
-                className="mb-2 block text-sm font-medium text-white/75"
-                htmlFor="document-improvement-instructions"
-              >
-                Additional improvement guidance <span className="font-normal text-white/45">(optional)</span>
-              </label>
-              <textarea
-                id="document-improvement-instructions"
-                value={improvementInstructions}
-                onChange={(event) => setImprovementInstructions(event.target.value)}
-                placeholder="For example: emphasize cloud infrastructure experience and keep the tone concise."
-                maxLength={2000}
-                className="min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-green-300/50"
-              />
-            </div>
+              <div className="mx-auto mt-5 w-full max-w-3xl">
+                <label
+                  className="mb-2 block text-center text-sm font-medium text-white/75"
+                  htmlFor="document-improvement-instructions"
+                >
+                  Additional improvement guidance <span className="font-normal text-white/45">(optional)</span>
+                </label>
+                <textarea
+                  id="document-improvement-instructions"
+                  value={improvementInstructions}
+                  onChange={(event) => setImprovementInstructions(event.target.value)}
+                  placeholder="For example: emphasize cloud infrastructure experience and keep the tone concise."
+                  maxLength={2000}
+                  className="min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-center placeholder:text-white/35 focus:border-green-300/50"
+                />
+              </div>
 
-            <div
-              role="tablist"
-              aria-label="Career documents"
-              className="mt-7 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/30 p-2"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeGeneration === "resume"}
-                onClick={() => setActiveGeneration("resume")}
-                className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
-                  activeGeneration === "resume"
-                    ? "bg-green-400/15 text-green-200 ring-1 ring-green-300/30"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
+              <div
+                role="tablist"
+                aria-label="Career documents"
+                className="mt-7 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/30 p-2"
               >
-                Improved Resume {resumeContent ? "✓" : ""}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeGeneration === "cover-letter"}
-                onClick={() => setActiveGeneration("cover-letter")}
-                className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
-                  activeGeneration === "cover-letter"
-                    ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30"
-                    : "text-white/60 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                Cover Letter {coverLetter.content ? "✓" : ""}
-              </button>
-            </div>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeGeneration === "resume"}
+                  onClick={() => setActiveGeneration("resume")}
+                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
+                    activeGeneration === "resume"
+                      ? "bg-green-400/15 text-green-200 ring-1 ring-green-300/30"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  Improved Resume {resumeContent ? "✓" : ""}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeGeneration === "cover-letter"}
+                  onClick={() => setActiveGeneration("cover-letter")}
+                  className={`rounded-xl px-4 py-3 text-sm font-semibold transition sm:text-base ${
+                    activeGeneration === "cover-letter"
+                      ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30"
+                      : "text-white/60 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  Cover Letter {coverLetter.content ? "✓" : ""}
+                </button>
+              </div>
 
-            {activeGeneration === "resume" ? (
+              {activeGeneration === "resume" ? (
               <section role="tabpanel" className="mt-6">
                 <div className="text-center">
                   <h3 className="text-xl font-semibold text-green-200">
@@ -642,7 +643,7 @@ export default function ResultsPage() {
                         )
                       }
                       disabled={resume.loading || !(resumeContent || textPreview)}
-                      className="inline-flex min-h-12 min-w-[220px] items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-7 py-3 text-base font-semibold text-white shadow-lg shadow-green-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-[52px] min-w-[220px] max-w-full items-center justify-center whitespace-normal rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-3 text-center text-base font-semibold leading-tight text-white shadow-lg shadow-green-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {resume.loading
                         ? `Improving... ${resume.progress}%`
@@ -662,7 +663,7 @@ export default function ResultsPage() {
                             "CareerOps_Resume.docx"
                           )
                         }
-                        className="inline-flex min-h-12 min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-green-200/25 bg-white/[0.06] px-6 py-3 text-base font-semibold text-green-100 transition hover:border-green-200/50 hover:bg-green-300/10"
+                        className="inline-flex min-h-[52px] min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-green-200/25 bg-white/[0.06] px-5 py-3 text-base font-semibold text-green-100 transition hover:border-green-200/50 hover:bg-green-300/10"
                       >
                         <DownloadIcon />
                         Download
@@ -689,7 +690,7 @@ export default function ResultsPage() {
                   <ScrollBox maxHeight="520px" className="bg-black/30">
                     {resumeContent}
                   </ScrollBox>
-                ) : (
+                  ) : (
                   <p className="mt-6 rounded-xl border border-white/10 bg-black/20 p-6 text-center text-white/55">
                     Generate an improved resume to preview and download it here.
                   </p>
@@ -722,7 +723,7 @@ export default function ResultsPage() {
                         )
                       }
                       disabled={coverLetter.loading || !jobDescription.trim() || !(resumeContent || textPreview)}
-                      className="inline-flex min-h-12 min-w-[240px] items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-7 py-3 text-base font-semibold text-white shadow-lg shadow-cyan-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-[52px] min-w-[220px] max-w-full items-center justify-center whitespace-normal rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 text-center text-base font-semibold leading-tight text-white shadow-lg shadow-cyan-950/30 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {coverLetter.loading
                         ? `Writing... ${coverLetter.progress}%`
@@ -742,7 +743,7 @@ export default function ResultsPage() {
                             "CareerOps_Cover_Letter.docx"
                           )
                         }
-                        className="inline-flex min-h-12 min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-cyan-200/25 bg-white/[0.06] px-6 py-3 text-base font-semibold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/10"
+                        className="inline-flex min-h-[52px] min-w-[144px] items-center justify-center gap-2 whitespace-nowrap rounded-full border border-cyan-200/25 bg-white/[0.06] px-5 py-3 text-base font-semibold text-cyan-100 transition hover:border-cyan-200/50 hover:bg-cyan-300/10"
                       >
                         <DownloadIcon />
                         Download
@@ -776,7 +777,8 @@ export default function ResultsPage() {
                 )}
 
               </section>
-            )}
+              )}
+            </div>
           </GlassCard>
         </div>
 
