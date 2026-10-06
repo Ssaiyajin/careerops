@@ -241,7 +241,15 @@ export default function ResultsPageContent() {
     URL.revokeObjectURL(url);
   };
 
-  const downloadDocx = async ({ endpoint, payload, filename }: { endpoint: string; payload: DataShape; filename: string }) => {
+  const downloadDocx = async ({
+    endpoint,
+    payload,
+    filename,
+  }: {
+    endpoint: string;
+    payload: Record<string, unknown>;
+    filename: string;
+  }) => {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
