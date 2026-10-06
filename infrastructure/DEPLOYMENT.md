@@ -14,7 +14,9 @@ Two separate `JWT_SECRET_KEY` values and two separate Neon branch
 connection strings — tokens issued by dev shouldn't validate against
 prod, and dev experiments shouldn't be able to touch production data.
 Set Vercel's server-side `BACKEND_API_URL` to the matching Render or
-production backend URL. In Compose, the frontend uses the private
+production backend URL. The `careerops-ten.vercel.app` dev frontend is
+pinned to `https://careerops-api-dev.onrender.com`; all other Vercel
+deployments use `BACKEND_API_URL`. In Compose, the frontend uses the private
 `http://backend:8000` service URL.
 
 The rest of this doc covers the **GCP/prod** side specifically —

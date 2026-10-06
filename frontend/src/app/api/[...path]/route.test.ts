@@ -43,6 +43,35 @@ test("stores login token only in an HttpOnly session cookie", async () => {
   expect(response.headers.get("set-cookie")).toMatch(/SameSite=lax/i);
 });
 
+test("routes the dev Vercel frontend to its HTTPS dev backend", async () => {
+  process.env.BACKEND_API_URL = "http://92.5.118.52:8000";
+  fetchMock.mockResolvedValue(
+    new Response(JSON.stringify({ access_token: token }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
+  );
+  const request = new NextRequest(
+    "https://careerops-ten.vercel.app/api/auth/register",
+    {
+      method: "POST",
+      headers: {
+        Origin: "https://careerops-ten.vercel.app",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: "user@example.com", password: "secret" }),
+    }
+  );
+
+  const response = await POST(request, context(["auth", "register"]));
+
+  expect(response.status).toBe(200);
+  expect(String(fetchMock.mock.calls[0][0])).toBe(
+    "https://careerops-api-dev.onrender.com/api/auth/register"
+  );
+  expect(response.headers.get("set-cookie")).toContain("HttpOnly");
+});
+
 test("rejects cross-origin mutation requests", async () => {
   const request = new NextRequest("http://localhost:3000/api/export-resume", {
     method: "POST",

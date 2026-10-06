@@ -65,7 +65,10 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
   }
 
-  const backendUrlValue = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+  const backendUrlValue =
+    request.nextUrl.hostname === "careerops-ten.vercel.app"
+      ? "https://careerops-api-dev.onrender.com"
+      : process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
   const backendUrl = new URL(backendUrlValue);
 
   if (process.env.NODE_ENV === "production" && backendUrl.protocol !== "https:") {
