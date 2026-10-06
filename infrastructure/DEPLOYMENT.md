@@ -8,7 +8,7 @@
 | Frontend host | Vercel (branch: `dev`) | Vercel (branch: `main`) |
 | Database | Neon **`dev`** branch | Neon **`main`**/production branch |
 | Git branch | `dev` | `main` |
-| Env file | `backend/.env.dev.example` | `backend/.env.prod.example` |
+| Env config | `backend/.env.example` (dev settings) | `backend/.env.example` (prod settings) |
 
 Two separate `JWT_SECRET_KEY` values and two separate Neon branch
 connection strings — tokens issued by dev shouldn't validate against
@@ -21,7 +21,8 @@ deployments use `BACKEND_API_URL`. In Compose, the frontend uses the private
 
 The rest of this doc covers the **GCP/prod** side specifically —
 Render's dev setup is just: create the Render service, point it at
-`backend/`, and set the env vars from `backend/.env.dev.example`.
+`backend/`, and set its variables using the dev-specific values described
+at the top of `backend/.env.example`.
 
 ## Cloud provider selection
 
@@ -177,7 +178,7 @@ Always Free allowance for a free-tier region.
 1. Adds a 2GB swapfile (OOM safety margin, not a performance fix)
 2. Installs Docker + the Compose plugin
 3. Clones the `main` branch to `/home/ubuntu/careerops`
-4. Copies `backend/.env.prod.example` → `backend/.env`
+4. Copies `backend/.env.example` → `backend/.env`
 5. Pulls the prebuilt images from GHCR and starts them
 
 **You still need to fill in `backend/.env` for real** — this can't be

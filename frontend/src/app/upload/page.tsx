@@ -156,18 +156,6 @@ export default function UploadPage() {
             "
           />
 
-          <label className="mt-5 flex items-start gap-3 text-left text-sm text-white/70">
-            <input
-              type="checkbox"
-              checked={aiProcessingConsent}
-              onChange={(event) => setAiProcessingConsent(event.target.checked)}
-              className="mt-1 accent-green-500"
-            />
-            <span>
-              I understand that my resume text is sent to Google Gemini for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to Gemini. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
-            </span>
-          </label>
-
         </div>
         {/* Upload Card */}
         <div
@@ -261,6 +249,18 @@ export default function UploadPage() {
               </div>
             )}
 
+          </label>
+
+          <label className="mt-6 flex items-start gap-3 text-left text-sm text-white/70">
+            <input
+              type="checkbox"
+              checked={aiProcessingConsent}
+              onChange={(event) => setAiProcessingConsent(event.target.checked)}
+              className="mt-1 accent-green-500"
+            />
+            <span>
+              I understand that my resume text is sent to an AI model for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to an AI model. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
+            </span>
           </label>
 
           {/* Upload Progress */}

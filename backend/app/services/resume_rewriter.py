@@ -1,4 +1,7 @@
-from app.services.gemini_analyzer import ask_gemini
+from app.services.gemini_analyzer import (
+    GEMINI_UNAVAILABLE_RESPONSE,
+    ask_gemini,
+)
 
 
 def rewrite_resume(
@@ -138,4 +141,7 @@ def rewrite_resume(
         
     """
     
-    return ask_gemini(prompt)
+    rewritten_resume = ask_gemini(prompt)
+    if rewritten_resume == GEMINI_UNAVAILABLE_RESPONSE:
+        return resume_text
+    return rewritten_resume

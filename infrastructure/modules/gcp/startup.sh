@@ -29,7 +29,7 @@ iptables -I INPUT -p tcp --dport 8000 -j ACCEPT || true
 if [ ! -d /home/ubuntu/careerops ]; then
   git clone -b main https://github.com/Ssaiyajin/careerops.git /home/ubuntu/careerops
   chown -R ubuntu:ubuntu /home/ubuntu/careerops
-  cp /home/ubuntu/careerops/backend/.env.prod.example /home/ubuntu/careerops/backend/.env
+  cp /home/ubuntu/careerops/backend/.env.example /home/ubuntu/careerops/backend/.env
   # IMPORTANT: SSH in afterwards and fill in backend/.env for real —
   # DATABASE_URL, JWT_SECRET_KEY, GEMINI_API_KEY can't be safely
   # baked into a startup script.
