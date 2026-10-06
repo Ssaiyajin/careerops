@@ -13,6 +13,7 @@ from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
 from app.api.auth import router as auth_router
 from app.database.database_service import purge_expired_resume_analyses
+from app.database.migrations import upgrade_database_schema
 
 print("CAREEROPS BACKEND STARTING")
 
@@ -32,6 +33,10 @@ async def _resume_retention_sweeper():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logging.info("Applying database migrations")
+    await asyncio.to_thread(upgrade_database_schema)
+    logging.info("Database migrations are up to date")
+
     task = asyncio.create_task(_resume_retention_sweeper())
     try:
         yield

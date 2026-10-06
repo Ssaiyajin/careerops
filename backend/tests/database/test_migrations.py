@@ -4,6 +4,7 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect, text
 
+from app.database import migrations as migration_service
 from app.database.models import Base, ResumeAnalysis, User
 
 
@@ -112,4 +113,49 @@ def test_migration_adds_missing_resume_owner_column_without_losing_data():
         ).scalar_one() == "Existing resume data"
     finally:
         connection.close()
+        test_engine.dispose()
+
+
+def test_application_migration_runner_upgrades_existing_schema(monkeypatch):
+    test_engine = create_engine("sqlite://")
+    with test_engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY,
+                    email VARCHAR NOT NULL UNIQUE,
+                    hashed_password VARCHAR NOT NULL,
+                    created_at DATETIME
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE TABLE resume_analysis (
+                    id INTEGER PRIMARY KEY,
+                    candidate_name VARCHAR,
+                    email VARCHAR,
+                    ats_score INTEGER,
+                    match_score INTEGER,
+                    experience_level VARCHAR,
+                    resume_text TEXT,
+                    created_at DATETIME
+                )
+                """
+            )
+        )
+
+    monkeypatch.setattr(migration_service, "engine", test_engine)
+    try:
+        migration_service.upgrade_database_schema()
+
+        columns = {
+            column["name"]
+            for column in inspect(test_engine).get_columns("resume_analysis")
+        }
+        assert "user_id" in columns
+    finally:
         test_engine.dispose()

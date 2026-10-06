@@ -242,7 +242,7 @@ gets OOM-killed by Docker instead of the whole box going down.
 
 ## Database schema migrations
 
-The backend images apply `alembic upgrade head` before starting FastAPI. For the Render native Python service rooted at the repository, set its start command to `cd backend && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT`. New databases are initialized by the checked-in migrations. The migrations recognize existing `users` and `resume_analysis` tables created by the former `Base.metadata.create_all()` startup, add the missing nullable `resume_analysis.user_id` column and its index when needed, and preserve existing rows. Back up production data before deploying a migration-enabled release. After this baseline, commit schema changes as new Alembic revisions; do not use `create_all()` as a production schema update mechanism.
+The backend applies `alembic upgrade head` during application startup and in its container entrypoints. New databases are initialized by the checked-in migrations. The migrations recognize existing `users` and `resume_analysis` tables created by the former `Base.metadata.create_all()` startup, add the missing nullable `resume_analysis.user_id` column and its index when needed, and preserve existing rows. Back up production data before deploying a migration-enabled release. After this baseline, commit schema changes as new Alembic revisions; do not use `create_all()` as a production schema update mechanism.
 
 ## Resume and backup retention
 

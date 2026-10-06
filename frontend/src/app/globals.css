@@ -52,6 +52,120 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
+@keyframes scene-grid-drift {
+  from {
+    background-position: 0 0, 0 0;
+  }
+
+  to {
+    background-position: 64px 32px, 32px 64px;
+  }
+}
+
+@keyframes scene-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    scale: 0.94;
+  }
+
+  50% {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+
+@keyframes scene-orbit-a {
+  0%,
+  100% {
+    transform: rotate(-12deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(-7deg) scale(1.035);
+  }
+}
+
+@keyframes scene-orbit-b {
+  0%,
+  100% {
+    transform: rotate(18deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(11deg) scale(0.97);
+  }
+}
+
+@keyframes scene-node-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 22px currentColor;
+  }
+}
+
+.careerops-scene-grid {
+  animation: scene-grid-drift 38s linear infinite;
+}
+
+.careerops-scene-glow-a {
+  animation: scene-glow-breathe 13s ease-in-out infinite;
+}
+
+.careerops-scene-glow-b {
+  animation: scene-glow-breathe 16s ease-in-out -5s infinite;
+}
+
+.careerops-scene-glow-c {
+  animation: scene-glow-breathe 19s ease-in-out -9s infinite;
+}
+
+.careerops-scene-orbit-a {
+  transform: rotate(-12deg);
+  animation: scene-orbit-a 28s ease-in-out infinite;
+}
+
+.careerops-scene-orbit-b {
+  transform: rotate(18deg);
+  animation: scene-orbit-b 34s ease-in-out infinite;
+}
+
+.careerops-scene-node {
+  animation: scene-node-pulse 4s ease-in-out infinite;
+}
+
+.careerops-scene-node-b {
+  animation-delay: -1.5s;
+}
+
+.careerops-scene-node-c {
+  animation-delay: -2.8s;
+}
+
+.careerops-scene-diamond {
+  transform: rotate(45deg);
+  animation: scene-orbit-a 18s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .careerops-scene-grid,
+  .careerops-scene-glow-a,
+  .careerops-scene-glow-b,
+  .careerops-scene-glow-c,
+  .careerops-scene-orbit-a,
+  .careerops-scene-orbit-b,
+  .careerops-scene-node,
+  .careerops-scene-diamond {
+    animation: none;
+  }
+}
+
 p,
 h1,
 h2,
