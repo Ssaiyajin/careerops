@@ -1,9 +1,8 @@
 "use client";
 import { API_BASE_URL } from "@/lib/api";
-import { getResumeData } from "@/store/resumeStore";
+import { type ResumeData, getResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-import { type ResumeData, getResumeData } from "@/store/resumeStore";
 import { useEffect, useRef, useState } from "react";
 
 const API_BASE = API_BASE_URL;
