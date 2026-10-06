@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 export type ResumeData = {
   skills: string[];
   candidate_name?: string;
@@ -23,31 +25,57 @@ export type ResumeData = {
   job_description?: string;
 };
 
-export function setResumeData(data: ResumeData) {
+let cachedStoredValue: string | null | undefined;
+let cachedResumeData: ResumeData | null = null;
 
-  localStorage.setItem(
-    "resumeData",
-    JSON.stringify(data)
-  );
+function notifyResumeDataChanged() {
+  window.dispatchEvent(new Event("resumeDataChange"));
+}
+
+function subscribeToResumeData(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === "resumeData") callback();
+  };
+
+  window.addEventListener("resumeDataChange", callback);
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    window.removeEventListener("resumeDataChange", callback);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+export function useResumeData(): ResumeData | null {
+  return useSyncExternalStore(subscribeToResumeData, getResumeData, () => null);
+}
+
+export function setResumeData(data: ResumeData) {
+  localStorage.setItem("resumeData", JSON.stringify(data));
+  notifyResumeDataChanged();
 }
 
 export function getResumeData(): ResumeData | null {
-
   if (typeof window === "undefined") {
     return null;
   }
 
   const stored = localStorage.getItem("resumeData");
-
-  if (!stored) {
-    return null;
+  if (stored === cachedStoredValue) {
+    return cachedResumeData;
   }
 
-  return JSON.parse(stored);
+  cachedStoredValue = stored;
+  cachedResumeData = stored ? JSON.parse(stored) : null;
+  return cachedResumeData;
 }
 
 export function clearResumeData() {
   if (typeof window !== "undefined") {
     localStorage.removeItem("resumeData");
+    notifyResumeDataChanged();
   }
 }

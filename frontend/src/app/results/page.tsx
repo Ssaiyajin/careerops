@@ -1,9 +1,9 @@
 "use client";
 import { API_BASE_URL } from "@/lib/api";
-import { type ResumeData, getResumeData } from "@/store/resumeStore";
+import { useResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 const API_BASE = API_BASE_URL;
 
@@ -258,11 +258,7 @@ async function downloadDocxFromApi(
 /* ------------------------------------------------------------------ */
 
 export default function ResultsPage() {
-  const [data, setData] = useState<ResumeData | null>(null);
-
-  useEffect(() => {
-    setData(getResumeData());
-  }, []);
+  const data = useResumeData();
 
   const resume = useGeneratedContent("/api/rewrite-from-text");
   const coverLetter = useGeneratedContent("/api/cover-letter-from-text");

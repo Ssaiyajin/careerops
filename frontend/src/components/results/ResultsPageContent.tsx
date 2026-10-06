@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { getResumeData, type ResumeData } from "@/store/resumeStore";
+import { useState } from "react";
+import { type ResumeData, useResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
@@ -136,17 +136,13 @@ function ActionButton({
 }
 
 export default function ResultsPageContent() {
-  const [data, setData] = useState<ResumeData | null>(null);
+  const data = useResumeData();
   const [rewriting, setRewriting] = useState(false);
   const [rewrite, setRewrite] = useState("");
   const [loadingCoverLetter, setLoadingCoverLetter] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [rewriteProgress, setRewriteProgress] = useState(0);
   const [coverLetterProgress, setCoverLetterProgress] = useState(0);
-
-  useEffect(() => {
-    setData(getResumeData());
-  }, []);
 
   const skills = data?.skills || [];
   const entities = data?.entities || {};
