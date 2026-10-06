@@ -124,7 +124,7 @@ export default function UploadPage() {
 
         </div>
         {/* JOB DESCRIPTION */}
-        <div className="mt-12 w-full max-w-5xl">
+        <div className="mx-auto mt-12 w-full max-w-4xl">
 
           <label className="mb-3 block text-center text-sm text-white/70">
             Paste Job Description
@@ -135,6 +135,8 @@ export default function UploadPage() {
             onChange={(e) => setJobDescription(e.target.value)}
             placeholder="Paste LinkedIn or company job description here..."
             className="
+              mx-auto
+              block
               h-64
               w-full
               rounded-2xl
@@ -158,7 +160,8 @@ export default function UploadPage() {
           mt-14
           mb-20
           w-full
-          max-w-5xl
+          mx-auto
+          max-w-4xl
           rounded-3xl
           border
           border-green-400/20

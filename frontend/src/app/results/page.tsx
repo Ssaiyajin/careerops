@@ -342,7 +342,7 @@ export default function ResultsPage() {
       <BackgroundEffects variant="results" />
 
       <PageContainer>
-        <div className="flex w-full flex-col items-center">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center">
           {/* HEADER */}
           <div className="text-center">
             <div className="mb-8 items-center justify-center rounded-full border border-green-400/30 bg-green-400/5 px-14 pt-3 pb-[14px] text-base text-green-300 backdrop-blur-sm">

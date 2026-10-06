@@ -81,7 +81,7 @@ export default function Navbar() {
         <Link
           href={loggedIn ? "/dashboard" : "/"}
           aria-label={loggedIn ? "CareerOps AI dashboard" : "CareerOps AI home"}
-          className="pointer-events-auto rounded-full border border-white/10 bg-slate-950/55 px-4 py-2 text-lg font-bold tracking-tight text-white shadow-lg shadow-black/10 backdrop-blur-md transition hover:border-green-300/30 hover:bg-slate-950/75"
+          className="pointer-events-auto text-lg font-bold tracking-tight text-white transition-colors hover:text-green-100 focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green-300"
         >
           CareerOps<span className="text-green-400"> AI</span>
         </Link>
