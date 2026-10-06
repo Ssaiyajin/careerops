@@ -44,7 +44,7 @@ export default function AnalyzePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      <BackgroundEffects />
+      <BackgroundEffects variant="analysis" />
 
       <PageContainer>
       <div className="flex flex-col items-center text-center">

@@ -265,8 +265,9 @@ export default function ResultsPage() {
 
   if (!data) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Loading...
+      <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black text-white">
+        <BackgroundEffects variant="results" />
+        <p className="relative z-10">Loading...</p>
       </main>
     );
   }
@@ -291,7 +292,7 @@ export default function ResultsPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
-      <BackgroundEffects />
+      <BackgroundEffects variant="results" />
 
       <PageContainer>
         <div className="flex w-full flex-col items-center">

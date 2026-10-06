@@ -6,6 +6,7 @@ import { getHistory } from "@/lib/api";
 import type { ResumeHistoryItem } from "@/lib/api/history";
 import { deleteAccount } from "@/lib/auth/auth";
 import { logout } from "@/lib/auth/token";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -44,15 +45,7 @@ export default function HistoryPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      {/* CareerOps Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#03110a] to-black" />
-        <div className="ai-grid" />
-
-        <div className="glow green top-[10%] left-[8%]" />
-        <div className="glow blue top-[25%] right-[10%]" />
-        <div className="glow purple bottom-[-120px] left-[25%]" />
-      </div>
+      <BackgroundEffects variant="history" />
 
       <div
         className="

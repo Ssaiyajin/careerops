@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth/useAuth";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function LoginPage() {
   const { handleLogin } = useAuth();
@@ -42,10 +43,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-black via-[#04140a] to-black" />
-      <div className="glow green top-[20%] left-[20%]" />
-      <div className="glow blue bottom-[10%] right-[20%]" />
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black text-white">
+      <BackgroundEffects variant="auth" />
 
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">

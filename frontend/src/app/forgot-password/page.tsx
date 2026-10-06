@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -48,8 +49,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-6 text-white">
-      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-black px-6 text-white">
+      <BackgroundEffects variant="auth" />
+      <div className="relative z-10 w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
         <h1 className="text-3xl font-bold text-green-400">Forgot Password</h1>
         <p className="mt-3 text-white/70">
           Enter the email for your account and we’ll send a secure reset link.

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { login, register } from "@/lib/auth/auth";
 import { markSessionActive } from "@/lib/auth/token";
 import { useRouter } from "next/navigation";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -81,7 +82,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="relative isolate min-h-screen overflow-hidden bg-black text-white">
+      <BackgroundEffects variant="auth" />
       {error && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-[420px] max-w-[90vw] rounded-3xl border border-white/10 bg-[#151b1d] p-6 shadow-2xl shadow-black/50">
@@ -99,7 +101,7 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="relative z-10 grid min-h-screen lg:grid-cols-2">
         <div className="hidden lg:flex flex-col justify-center px-20">
           <h1 className="text-7xl font-bold">
             CareerOps

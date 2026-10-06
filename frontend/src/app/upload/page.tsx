@@ -29,7 +29,6 @@ export default function UploadPage() {
       const file = event.target.files?.[0];
 
       if (!file) return;
-      console.log("FILE SELECTED:", file.name);
       setFileName(file.name);
 
       setUploading(true);
@@ -53,9 +52,7 @@ export default function UploadPage() {
 
         }, 300);
         
-        console.log("CALLING BACKEND...");
         // REAL backend upload
-        console.log("Starting upload...");
 
         setStatus("Uploading Resume...");
         setProgress(20);
@@ -83,8 +80,6 @@ export default function UploadPage() {
         setStatus("Analysis Complete");
         setProgress(100);
 
-        console.log("BACKEND RESPONSE:", data);
-
         setResumeData(data);
 
         setTimeout(() => {
@@ -95,11 +90,12 @@ export default function UploadPage() {
 
       } catch (error) {
 
-        console.error("UPLOAD ERROR:", error);
-
         event.target.value = "";
-        
-        alert("Upload failed. Check browser console.");
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "Resume upload failed. Please try again."
+        );
 
         setUploading(false);
       }
@@ -109,7 +105,7 @@ export default function UploadPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      <BackgroundEffects />
+      <BackgroundEffects variant="upload" />
 
       <PageContainer>
       <div className="flex flex-col items-center text-center">
@@ -300,6 +296,11 @@ export default function UploadPage() {
               </div>
 
             </div>
+          )}
+          {!uploading && status && status !== "Analysis Complete" && (
+            <p role="alert" className="mt-6 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-left text-sm text-red-200">
+              {status}
+            </p>
           )}
                 
         </div>

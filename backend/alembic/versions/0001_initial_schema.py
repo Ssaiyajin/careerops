@@ -42,6 +42,14 @@ def upgrade():
             sa.Column("resume_text", sa.Text(), nullable=True),
             sa.Column("created_at", sa.DateTime(), nullable=True),
         )
+    elif "user_id" not in {
+        column["name"]
+        for column in sa.inspect(connection).get_columns("resume_analysis")
+    }:
+        op.add_column(
+            "resume_analysis",
+            sa.Column("user_id", sa.Integer(), nullable=True),
+        )
 
     if not sa.inspect(connection).has_table("api_usage_events"):
         op.create_table(

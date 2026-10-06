@@ -83,4 +83,24 @@ describe("UploadPage", () => {
 
     expect((textarea as HTMLTextAreaElement).value).toBe("This is a job description");
   });
+
+  it("shows the backend upload error on the page", async () => {
+    mockUploadResume.mockRejectedValue(
+      new Error("Resume analysis could not be saved.")
+    );
+
+    render(<UploadPage />);
+    fireEvent.click(screen.getByRole("checkbox"));
+
+    const file = new File(["dummy pdf content"], "test.pdf", {
+      type: "application/pdf"
+    });
+    fireEvent.change(screen.getByTestId("upload-file-input"), {
+      target: { files: [file] },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Resume analysis could not be saved."
+    );
+  });
 });

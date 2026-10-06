@@ -1,3 +1,5 @@
+import logging
+
 import fitz
 import pytest
 from fastapi.testclient import TestClient
@@ -158,3 +160,62 @@ def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers)
     with Session(bind=database_service.engine) as db:
         saved = db.query(ResumeAnalysis).one()
         assert saved.resume_text == "Python and Docker developer"
+
+
+def test_upload_failure_logs_do_not_include_exception_message(
+    monkeypatch, auth_headers, caplog
+):
+    def fail_save_resume_analysis(**_kwargs):
+        raise RuntimeError("private resume content")
+
+    monkeypatch.setattr(resume_api, "extract_name", lambda _: "Candidate")
+    monkeypatch.setattr(resume_api, "process_text", lambda _: ["Python"])
+    monkeypatch.setattr(
+        resume_api,
+        "extract_entities",
+        lambda _: {"emails": [], "phones": [], "names": [], "organizations": [], "locations": [], "dates": []},
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "calculate_ats_score",
+        lambda *args: {"ats_score": 80, "recommendations": []},
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "generate_ats_advice",
+        lambda *args: {"recommendations": [], "missing_keywords": []},
+    )
+    monkeypatch.setattr(resume_api, "classify_experience", lambda _: "Mid-level")
+    monkeypatch.setattr(resume_api, "parse_resume_sections", lambda _: {})
+    monkeypatch.setattr(
+        resume_api,
+        "semantic_job_match",
+        lambda *args: {"semantic_match_score": None},
+    )
+    monkeypatch.setattr(resume_api, "rewrite_resume", lambda *args: "Rewritten resume")
+    monkeypatch.setattr(
+        resume_api,
+        "generate_gemini_recommendations",
+        lambda *args: "Recommendations",
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "save_resume_analysis",
+        fail_save_resume_analysis,
+    )
+    pdf = fitz.open()
+    pdf.new_page().insert_text((72, 72), "Resume")
+    pdf_bytes = pdf.tobytes()
+    pdf.close()
+
+    with caplog.at_level(logging.ERROR, logger=resume_api.__name__):
+        response = client.post(
+            "/api/resume/upload",
+            files={"file": ("resume.pdf", pdf_bytes, "application/pdf")},
+            data={"job_description": "Python role"},
+            headers=auth_headers,
+        )
+
+    assert response.status_code == 500
+    assert "saving resume analysis (RuntimeError)" in caplog.text
+    assert "private resume content" not in caplog.text

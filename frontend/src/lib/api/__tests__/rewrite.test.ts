@@ -21,14 +21,33 @@ describe("rewrite API helper", () => {
     expect(result).toEqual(fakeResponse);
   });
 
-  it("throws when the upload fails", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
-    const text = jest.fn().mockResolvedValue("bad request");
-    (global.fetch as jest.Mock).mockResolvedValue({ ok: false, text });
+  it("surfaces the backend's upload error detail", async () => {
+    const json = jest.fn().mockResolvedValue({
+      detail: "Failed to process resume. Please try again.",
+    });
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json,
+    });
 
     const file = new File(["dummy"], "resume.pdf", { type: "application/pdf" });
-    await expect(uploadResume(file, "Job desc")).rejects.toThrow("Upload failed");
+    await expect(uploadResume(file, "Job desc")).rejects.toThrow(
+      "Failed to process resume. Please try again."
+    );
+  });
 
-    consoleError.mockRestore();
+  it("includes the HTTP status when the upload response has no detail", async () => {
+    const json = jest.fn().mockRejectedValue(new Error("Invalid JSON"));
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 502,
+      json,
+    });
+
+    const file = new File(["dummy"], "resume.pdf", { type: "application/pdf" });
+    await expect(uploadResume(file, "Job desc")).rejects.toThrow(
+      "Resume upload failed (HTTP 502)."
+    );
   });
 });

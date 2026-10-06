@@ -1,16 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function HomePage() {
   return (
     <main className="relative flex min-h-screen flex-col overflow-hidden bg-black text-white">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgba(0,80,43,0.25),transparent_55%),linear-gradient(135deg,#000,#03110a_55%,#000)]" />
-        <div className="absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(34,197,94,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(34,197,94,0.08)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_75%,transparent)]" />
-        <div className="absolute left-[12%] top-[18%] h-64 w-64 rounded-full bg-green-500/10 blur-[110px]" />
-        <div className="absolute bottom-[12%] right-[10%] h-72 w-72 rounded-full bg-emerald-400/10 blur-[120px]" />
-      </div>
+      <BackgroundEffects variant="home" />
 
       <header className="relative z-20 flex w-full items-center justify-between px-6 py-5 sm:px-10 lg:px-16">
         <Link href="/" className="text-lg font-bold tracking-tight sm:text-xl">

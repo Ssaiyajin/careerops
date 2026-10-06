@@ -56,3 +56,60 @@ def test_initial_migration_preserves_legacy_create_all_tables():
     finally:
         connection.close()
         test_engine.dispose()
+
+
+def test_migration_adds_missing_resume_owner_column_without_losing_data():
+    test_engine = create_engine("sqlite://")
+    with test_engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                CREATE TABLE users (
+                    id INTEGER PRIMARY KEY,
+                    email VARCHAR NOT NULL UNIQUE,
+                    hashed_password VARCHAR NOT NULL,
+                    created_at DATETIME
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE TABLE resume_analysis (
+                    id INTEGER PRIMARY KEY,
+                    candidate_name VARCHAR,
+                    email VARCHAR,
+                    ats_score INTEGER,
+                    match_score INTEGER,
+                    experience_level VARCHAR,
+                    resume_text TEXT,
+                    created_at DATETIME
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO resume_analysis (candidate_name, resume_text) "
+                "VALUES ('Legacy Candidate', 'Existing resume data')"
+            )
+        )
+
+    connection = test_engine.connect()
+    config = Config(str(Path(__file__).resolve().parents[2] / "alembic.ini"))
+    config.attributes["connection"] = connection
+
+    try:
+        command.upgrade(config, "head")
+        columns = {column["name"] for column in inspect(connection).get_columns("resume_analysis")}
+        indexes = {index["name"] for index in inspect(connection).get_indexes("resume_analysis")}
+
+        assert "user_id" in columns
+        assert "ix_resume_analysis_user_id" in indexes
+        assert connection.execute(
+            text("SELECT resume_text FROM resume_analysis")
+        ).scalar_one() == "Existing resume data"
+    finally:
+        connection.close()
+        test_engine.dispose()

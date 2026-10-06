@@ -1,23 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function DashboardPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      {/* Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#03110a] to-black" />
-        <div className="ai-grid" />
-
-        <div className="glow green top-[10%] left-[8%]" />
-        <div className="glow blue top-[25%] right-[10%]" />
-        <div className="glow purple bottom-[-120px] left-[25%]" />
-
-        <div className="absolute left-[18%] top-0 h-full w-px bg-green-400/20 animate-pulse" />
-        <div className="absolute right-[15%] top-0 h-full w-px bg-cyan-400/20 animate-pulse" />
-      </div>
+      <BackgroundEffects variant="dashboard" />
 
       {/* Content */}
       <div
