@@ -543,8 +543,8 @@ export default function ResultsPage() {
               Both documents use the job description you added during upload. Add optional guidance to refine either document.
             </p>
 
-            <div className="mx-auto w-full max-w-4xl text-center">
-              <div className="mx-auto mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-center">
+            <div className="mx-auto mt-6 flex w-full min-w-0 max-w-4xl flex-col items-center text-center">
+              <div className="mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-center">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <p className="text-sm font-medium text-cyan-100">
                     Job description from upload
@@ -569,7 +569,7 @@ export default function ResultsPage() {
                 )}
               </div>
 
-              <div className="mx-auto mt-5 w-full max-w-3xl">
+              <div className="mt-5 w-full max-w-3xl text-center">
                 <label
                   className="mb-2 block text-center text-sm font-medium text-white/75"
                   htmlFor="document-improvement-instructions"
@@ -582,14 +582,14 @@ export default function ResultsPage() {
                   onChange={(event) => setImprovementInstructions(event.target.value)}
                   placeholder="For example: emphasize cloud infrastructure experience and keep the tone concise."
                   maxLength={2000}
-                  className="min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-center placeholder:text-white/35 focus:border-green-300/50"
+                  className="mx-auto block min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-center text-sm text-white outline-none placeholder:text-white/35 focus:border-green-300/50"
                 />
               </div>
 
               <div
                 role="tablist"
                 aria-label="Career documents"
-                className="mt-7 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/30 p-2"
+                className="mt-7 grid w-full min-w-0 grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-black/30 p-2"
               >
                 <button
                   type="button"
@@ -620,7 +620,7 @@ export default function ResultsPage() {
               </div>
 
               {activeGeneration === "resume" ? (
-              <section role="tabpanel" className="mt-6">
+              <section role="tabpanel" className="mt-6 w-full min-w-0">
                 <div className="text-center">
                   <h3 className="text-xl font-semibold text-green-200">
                     AI-improved resume
@@ -698,7 +698,7 @@ export default function ResultsPage() {
 
               </section>
             ) : (
-              <section role="tabpanel" className="mt-6">
+              <section role="tabpanel" className="mt-6 w-full min-w-0">
                 <div className="text-center">
                   <h3 className="text-xl font-semibold text-cyan-200">
                     Job-tailored cover letter

@@ -105,7 +105,7 @@ export default function UploadPage() {
       <BackgroundEffects variant="upload" />
 
       <PageContainer>
-      <div className="flex flex-col items-center text-center">
+      <div className="flex w-full min-w-0 flex-col items-center text-center">
         {/* Header */}
         <div className="text-center">
 
