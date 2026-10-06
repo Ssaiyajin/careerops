@@ -13,6 +13,8 @@ class RewriteRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     resume_text: str = Field(min_length=1, max_length=30000)
+    job_description: str = Field(default="", max_length=20000)
+    improvement_instructions: str = Field(default="", max_length=2000)
 
 
 @router.post("/rewrite-from-text")
@@ -28,7 +30,9 @@ async def rewrite_resume_endpoint(
             skills=[],
             sections={},
             experience_level="Mid-level",
-            ats_advice={}
+            ats_advice={},
+            job_description=request.job_description,
+            improvement_instructions=request.improvement_instructions,
         )
 
     except Exception as e:

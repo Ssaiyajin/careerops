@@ -224,42 +224,42 @@ body {
 }
 
 .careerops-scene-grid {
-  animation: scene-grid-drift 32s linear infinite;
+  animation: scene-grid-drift 16s linear infinite;
   will-change: transform;
 }
 
 .careerops-scene-glow-a {
-  animation: scene-glow-breathe 18s ease-in-out infinite;
+  animation: scene-glow-breathe 10s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
 .careerops-scene-glow-b {
-  animation: scene-glow-c 23s ease-in-out -8s infinite;
+  animation: scene-glow-c 12s ease-in-out -8s infinite;
   will-change: transform, opacity;
 }
 
 .careerops-scene-glow-c {
-  animation: scene-glow-breathe 27s ease-in-out -12s infinite;
+  animation: scene-glow-breathe 14s ease-in-out -12s infinite;
   will-change: transform, opacity;
 }
 
 .careerops-scene-sweep {
-  animation: scene-sweep 26s ease-in-out infinite alternate;
+  animation: scene-sweep 14s ease-in-out infinite alternate;
   will-change: transform;
 }
 
 .careerops-scene-orbit-a {
   transform: rotate(-12deg);
-  animation: scene-orbit-a 28s ease-in-out infinite;
+  animation: scene-orbit-a 16s ease-in-out infinite;
 }
 
 .careerops-scene-orbit-b {
   transform: rotate(18deg);
-  animation: scene-orbit-b 34s ease-in-out infinite;
+  animation: scene-orbit-b 18s ease-in-out infinite;
 }
 
 .careerops-scene-node {
-  animation: scene-node-pulse 4s ease-in-out infinite;
+  animation: scene-node-pulse 2s ease-in-out infinite;
 }
 
 .careerops-scene-node-b {
@@ -272,73 +272,73 @@ body {
 
 .careerops-scene-diamond {
   transform: rotate(45deg);
-  animation: scene-orbit-a 18s ease-in-out infinite;
+  animation: scene-orbit-a 10s ease-in-out infinite;
 }
 
 [data-scene="home"] .careerops-scene-art {
-  animation: scene-orbit-a 24s ease-in-out infinite;
+  animation: scene-orbit-a 13s ease-in-out infinite;
 }
 
 [data-scene="login"] .careerops-scene-art {
-  animation: scene-account-float 8s ease-in-out infinite;
+  animation: scene-account-float 4s ease-in-out infinite;
 }
 
 [data-scene="login"] .careerops-scene-art-ring {
   transform-origin: 492px 342px;
-  animation: scene-register-orbit 18s linear infinite;
+  animation: scene-register-orbit 10s linear infinite;
 }
 
 [data-scene="register"] .careerops-scene-art {
-  animation: scene-register-orbit 100s linear infinite;
+  animation: scene-register-orbit 40s linear infinite;
 }
 
 [data-scene="forgot"] .careerops-scene-art {
-  animation: scene-lock-bob 6s ease-in-out infinite;
+  animation: scene-lock-bob 3s ease-in-out infinite;
 }
 
 [data-scene="forgot"] .careerops-scene-art-ring {
   transform-origin: 400px 270px;
-  animation: scene-register-orbit 26s linear infinite;
+  animation: scene-register-orbit 14s linear infinite;
 }
 
 [data-scene="reset"] .careerops-scene-art {
   transform-origin: center;
-  animation: scene-key-turn 6s ease-in-out infinite;
+  animation: scene-key-turn 3s ease-in-out infinite;
 }
 
 [data-scene="reset"] .careerops-scene-art-ring {
   transform-origin: 350px 250px;
-  animation: scene-register-orbit 22s linear infinite reverse;
+  animation: scene-register-orbit 12s linear infinite reverse;
 }
 
 [data-scene="upload"] .careerops-scene-scan {
-  animation: scene-upload-scan 3.5s ease-in-out infinite alternate;
+  animation: scene-upload-scan 1.8s ease-in-out infinite alternate;
 }
 
 [data-scene="analysis"] .careerops-scene-spin-a {
   transform-origin: 400px 250px;
-  animation: scene-register-orbit 20s linear infinite;
+  animation: scene-register-orbit 11s linear infinite;
 }
 
 [data-scene="analysis"] .careerops-scene-spin-b {
   transform-origin: 400px 250px;
-  animation: scene-register-orbit 30s linear infinite reverse;
+  animation: scene-register-orbit 16s linear infinite reverse;
 }
 
 [data-scene="dashboard"] .careerops-scene-chart {
   transform-box: fill-box;
   transform-origin: center bottom;
-  animation: scene-chart-grow 5s ease-in-out infinite;
+  animation: scene-chart-grow 3s ease-in-out infinite;
 }
 
 [data-scene="results"] .careerops-scene-results-chart path:first-child {
   stroke-dasharray: 480;
   stroke-dashoffset: 0;
-  animation: scene-results-draw 6s ease-in-out infinite alternate;
+  animation: scene-results-draw 3s ease-in-out infinite alternate;
 }
 
 [data-scene="history"] .careerops-scene-timeline-node {
-  animation: scene-history-pulse 3s ease-in-out infinite;
+  animation: scene-history-pulse 1.8s ease-in-out infinite;
 }
 
 [data-scene="history"] .careerops-scene-timeline-node:nth-of-type(2) {

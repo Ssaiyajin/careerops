@@ -43,6 +43,10 @@ describe("UploadPage", () => {
 
     const { unmount } = render(<UploadPage />);
     fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.change(
+      screen.getByPlaceholderText(/Paste LinkedIn or company job description/i),
+      { target: { value: "Senior Cloud Engineer role" } }
+    );
 
     const file = new File(["dummy pdf content"], "test.pdf", {
       type: "application/pdf"
@@ -57,10 +61,12 @@ describe("UploadPage", () => {
         const [calledFile, calledDescription] = mockUploadResume.mock.calls[0];
         expect(calledFile).toBeInstanceOf(File);
         expect((calledFile as File).name).toBe("test.pdf");
-        expect(calledDescription).toBe("");
+        expect(calledDescription).toBe("Senior Cloud Engineer role");
       },
       { timeout: 5000 }
     );
+    expect(JSON.parse(localStorage.getItem("resumeData") || "{}").job_description)
+      .toBe("Senior Cloud Engineer role");
 
     await waitFor(
       () => {
@@ -73,6 +79,8 @@ describe("UploadPage", () => {
     render(<ResultsPage />);
     expect(await screen.findByRole("heading", { name: "Test User" })).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
+    expect(screen.getByText("Applied to both documents")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Target job description")).not.toBeInTheDocument();
   });
 
   it("updates job description", () => {

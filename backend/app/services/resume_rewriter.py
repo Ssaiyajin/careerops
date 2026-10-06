@@ -9,7 +9,9 @@ def rewrite_resume(
     skills: list,
     sections: dict,
     experience_level: str,
-    ats_advice: dict
+    ats_advice: dict,
+    job_description: str = "",
+    improvement_instructions: str = "",
 ):
 
     prompt = f"""
@@ -113,6 +115,12 @@ def rewrite_resume(
 
         Missing ATS Keywords:
         {ats_advice.get("missing_keywords", [])}
+
+        TARGET JOB DESCRIPTION:
+        {job_description or "Not provided"}
+
+        ADDITIONAL USER GUIDANCE:
+        {improvement_instructions or "None"}
 
         RAW RESUME:
 

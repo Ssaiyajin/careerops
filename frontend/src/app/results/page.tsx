@@ -306,7 +306,7 @@ export default function ResultsPage() {
   const resume = useGeneratedContent("/api/rewrite-from-text");
   const coverLetter = useGeneratedContent("/api/cover-letter-from-text");
   const [activeGeneration, setActiveGeneration] = useState<"resume" | "cover-letter">("resume");
-  const [editedJobDescription, setEditedJobDescription] = useState<string | null>(null);
+  const [improvementInstructions, setImprovementInstructions] = useState("");
 
   if (!data) {
     return (
@@ -318,7 +318,7 @@ export default function ResultsPage() {
   }
 
   const resumeContent = resume.content || initialResume;
-  const jobDescription = editedJobDescription ?? data.job_description ?? "";
+  const jobDescription = data.job_description ?? "";
   const skills: string[] = data?.skills || [];
   const entities = data?.entities;
   const candidateName = data?.candidate_name || "Unknown Candidate";
@@ -540,8 +540,50 @@ export default function ResultsPage() {
 
           <GlassCard className="mt-14" title="Your Career Documents">
             <p className="mt-2 text-center text-sm text-white/55">
-              Your improved resume is ready. Switch documents or regenerate either one whenever you update your job target.
+              Both documents use the job description you added during upload. Add optional guidance to refine either document.
             </p>
+
+            <div className="mx-auto mt-6 max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-cyan-100">
+                  Job description from upload
+                </p>
+                <span className="rounded-full border border-cyan-200/15 bg-cyan-100/5 px-3 py-1 text-xs text-cyan-100/70">
+                  {jobDescription ? "Applied to both documents" : "Not provided"}
+                </span>
+              </div>
+              {jobDescription ? (
+                <details className="mt-2">
+                  <summary className="w-fit cursor-pointer text-xs text-white/50 transition hover:text-white/80">
+                    View uploaded job description
+                  </summary>
+                  <p className="mt-3 max-h-40 overflow-y-auto whitespace-pre-wrap text-sm text-white/65">
+                    {jobDescription}
+                  </p>
+                </details>
+              ) : (
+                <p className="mt-2 text-sm text-white/50">
+                  Start a new resume upload with a job description to tailor both documents.
+                </p>
+              )}
+            </div>
+
+            <div className="mx-auto mt-5 max-w-3xl">
+              <label
+                className="mb-2 block text-sm font-medium text-white/75"
+                htmlFor="document-improvement-instructions"
+              >
+                Additional improvement guidance <span className="font-normal text-white/45">(optional)</span>
+              </label>
+              <textarea
+                id="document-improvement-instructions"
+                value={improvementInstructions}
+                onChange={(event) => setImprovementInstructions(event.target.value)}
+                placeholder="For example: emphasize cloud infrastructure experience and keep the tone concise."
+                maxLength={2000}
+                className="min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-green-300/50"
+              />
+            </div>
 
             <div
               role="tablist"
@@ -578,43 +620,55 @@ export default function ResultsPage() {
 
             {activeGeneration === "resume" ? (
               <section role="tabpanel" className="mt-6">
-                <label className="mb-2 block text-sm font-medium text-white/70" htmlFor="cover-letter-job-description">
-                  Target job description
-                </label>
-                <textarea
-                  id="cover-letter-job-description"
-                  value={jobDescription}
-                  onChange={(event) => setEditedJobDescription(event.target.value)}
-                  placeholder="Paste the job description to personalize the cover letter..."
-                  className="mb-6 min-h-32 w-full resize-y rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-300/50"
-                />
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-green-200">
-                      AI-improved resume
-                    </h3>
-                    <p className="mt-1 text-sm text-white/50">
-                      {resumeContent ? "Generated from your uploaded resume" : "Generate an ATS-focused version"}
-                    </p>
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-green-200">
+                    AI-improved resume
+                  </h3>
+                  <p className="mt-1 text-sm text-white/50">
+                    {resumeContent ? "Generated from your uploaded resume" : "Generate an ATS-focused version"}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        resume.generate(
+                          {
+                            resume_text: resumeContent || textPreview,
+                            job_description: jobDescription,
+                            improvement_instructions: improvementInstructions,
+                          },
+                          "rewrite",
+                          "Could not generate an improved resume."
+                        )
+                      }
+                      disabled={resume.loading || !(resumeContent || textPreview)}
+                      className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {resume.loading
+                        ? `Improving... ${resume.progress}%`
+                        : resumeContent
+                          ? "Regenerate resume"
+                          : "Generate resume"}
+                    </button>
+                    {resumeContent && !resume.loading && (
+                      <button
+                        type="button"
+                        aria-label="Download improved resume"
+                        title="Download improved resume"
+                        onClick={() =>
+                          downloadDocxFromApi(
+                            "/api/export-resume",
+                            { ...candidateInfo, resume_text: resumeContent },
+                            "CareerOps_Resume.docx"
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-full border border-green-200/20 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-green-100 transition hover:border-green-200/40 hover:bg-green-300/10"
+                      >
+                        <DownloadIcon />
+                        Download
+                      </button>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      resume.generate(
-                        { resume_text: resumeContent || textPreview },
-                        "rewrite",
-                        "Could not generate an improved resume."
-                      )
-                    }
-                    disabled={resume.loading || !(resumeContent || textPreview)}
-                    className="rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {resume.loading
-                      ? `Improving... ${resume.progress}%`
-                      : resumeContent
-                        ? "Regenerate resume"
-                        : "Generate resume"}
-                  </button>
                 </div>
 
                 {resume.error && (
@@ -641,56 +695,60 @@ export default function ResultsPage() {
                   </p>
                 )}
 
-                {resumeContent && !resume.loading && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      downloadDocxFromApi(
-                        "/api/export-resume",
-                        { ...candidateInfo, resume_text: resumeContent },
-                        "CareerOps_Resume.docx"
-                      )
-                    }
-                    className="mt-5 rounded-full border border-green-300/30 bg-green-400/10 px-5 py-3 font-semibold text-green-100 transition hover:bg-green-400/20"
-                  >
-                    Download resume (.docx)
-                  </button>
-                )}
               </section>
             ) : (
               <section role="tabpanel" className="mt-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-cyan-200">
-                      Job-tailored cover letter
-                    </h3>
-                    <p className="mt-1 text-sm text-white/50">
-                      {jobDescription
-                        ? "Personalized to the job description you provided"
-                        : "Add a job description during resume upload to tailor this letter"}
-                    </p>
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-cyan-200">
+                    Job-tailored cover letter
+                  </h3>
+                  <p className="mt-1 text-sm text-white/50">
+                    {jobDescription
+                      ? "Personalized to the job description you provided"
+                      : "A job description is required to tailor this letter"}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        coverLetter.generate(
+                          {
+                            resume_text: resumeContent || textPreview,
+                            job_description: jobDescription,
+                            improvement_instructions: improvementInstructions,
+                          },
+                          "cover_letter",
+                          "Could not generate a cover letter."
+                        )
+                      }
+                      disabled={coverLetter.loading || !jobDescription.trim() || !(resumeContent || textPreview)}
+                      className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {coverLetter.loading
+                        ? `Writing... ${coverLetter.progress}%`
+                        : coverLetter.content
+                          ? "Regenerate cover letter"
+                          : "Generate cover letter"}
+                    </button>
+                    {coverLetter.content && !coverLetter.loading && (
+                      <button
+                        type="button"
+                        aria-label="Download cover letter"
+                        title="Download cover letter"
+                        onClick={() =>
+                          downloadDocxFromApi(
+                            "/api/export-cover-letter",
+                            { ...candidateInfo, cover_letter_text: coverLetter.content },
+                            "CareerOps_Cover_Letter.docx"
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-200/40 hover:bg-cyan-300/10"
+                      >
+                        <DownloadIcon />
+                        Download
+                      </button>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      coverLetter.generate(
-                        {
-                          resume_text: resumeContent || textPreview,
-                          job_description: jobDescription,
-                        },
-                        "cover_letter",
-                        "Could not generate a cover letter."
-                      )
-                    }
-                    disabled={coverLetter.loading || !jobDescription.trim()}
-                    className="rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {coverLetter.loading
-                      ? `Writing... ${coverLetter.progress}%`
-                      : coverLetter.content
-                        ? "Regenerate cover letter"
-                        : "Generate cover letter"}
-                  </button>
                 </div>
 
                 {coverLetter.error && (
@@ -717,21 +775,6 @@ export default function ResultsPage() {
                   </p>
                 )}
 
-                {coverLetter.content && !coverLetter.loading && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      downloadDocxFromApi(
-                        "/api/export-cover-letter",
-                        { ...candidateInfo, cover_letter_text: coverLetter.content },
-                        "CareerOps_Cover_Letter.docx"
-                      )
-                    }
-                    className="mt-5 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-5 py-3 font-semibold text-cyan-100 transition hover:bg-cyan-400/20"
-                  >
-                    Download cover letter (.docx)
-                  </button>
-                )}
               </section>
             )}
           </GlassCard>
@@ -742,5 +785,24 @@ export default function ResultsPage() {
         </div>
       </PageContainer>
     </main>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 20 20"
+      fill="none"
+      className="h-4 w-4"
+    >
+      <path
+        d="M10 2.75v9.5m0 0 3.5-3.5M10 12.25l-3.5-3.5M3.75 13.5v2A1.75 1.75 0 0 0 5.5 17.25h9a1.75 1.75 0 0 0 1.75-1.75v-2"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

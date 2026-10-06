@@ -22,7 +22,7 @@ def test_cover_letter_uses_job_description_and_returns_plain_text(
     monkeypatch.setattr(
         coverletter_api,
         "generate_cover_letter",
-        lambda resume, job: f"Tailored to: {job}",
+        lambda resume, job, guidance: f"Tailored to: {job}; guidance: {guidance}",
     )
 
     response = client.post(
@@ -30,12 +30,13 @@ def test_cover_letter_uses_job_description_and_returns_plain_text(
         json={
             "resume_text": "Python developer with cloud experience",
             "job_description": "Senior Cloud Engineer role",
+            "improvement_instructions": "Emphasize AWS migration work",
         },
     )
 
     assert response.status_code == 200
     assert response.json() == {
-        "cover_letter": "Tailored to: Senior Cloud Engineer role"
+        "cover_letter": "Tailored to: Senior Cloud Engineer role; guidance: Emphasize AWS migration work"
     }
 
 

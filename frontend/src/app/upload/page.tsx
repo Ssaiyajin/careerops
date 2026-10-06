@@ -72,15 +72,12 @@ export default function UploadPage() {
         setStatus("Running AI Analysis...");
         setProgress(80);
 
-        const data = await uploadResume(
-          file,
-          jobDescription
-        );
+        const data = await uploadResume(file, jobDescription);
 
         setStatus("Analysis Complete");
         setProgress(100);
 
-        setResumeData(data);
+        setResumeData({ ...data, job_description: jobDescription });
 
         setTimeout(() => {
           router.push("/results");
@@ -156,6 +153,8 @@ export default function UploadPage() {
         {/* Upload Card */}
         <div
           className="
+          box-border
+          min-w-0
           mt-14
           mb-20
           w-full
@@ -209,7 +208,7 @@ export default function UploadPage() {
               data-testid="upload-file-input"
               onChange={handleFileChange}
               disabled={!aiProcessingConsent || uploading}
-              className="text-white"
+              className="sr-only"
             />
 
             {/* Upload Icon */}
@@ -261,7 +260,7 @@ export default function UploadPage() {
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="mt-8">
+            <div className="mt-8 box-border w-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/25 p-5">
 
               <div className="mb-4 text-center">
 
@@ -271,15 +270,23 @@ export default function UploadPage() {
 
               </div>
 
-              <div className="mb-3 flex justify-between text-sm text-white/60">
-                <span>CareerOps Processing</span>
-                <span>{progress}%</span>
+              <div className="mb-3 flex min-w-0 justify-between gap-3 text-sm text-white/60">
+                <span className="truncate">CareerOps Processing</span>
+                <span className="shrink-0">{progress}%</span>
               </div>
 
-              <div className="h-3 overflow-hidden rounded-full bg-white/10">
+              <div
+                role="progressbar"
+                aria-label="Resume analysis progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+                className="box-border h-3 w-full min-w-0 overflow-hidden rounded-full bg-white/10"
+              >
 
                 <div
                   className="
+                    max-w-full
                     h-full
                     rounded-full
                     bg-gradient-to-r

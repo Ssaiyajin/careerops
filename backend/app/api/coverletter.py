@@ -14,6 +14,7 @@ class CoverLetterRequest(BaseModel):
 
     resume_text: str = Field(min_length=1, max_length=30000)
     job_description: str = Field(min_length=1, max_length=20000)
+    improvement_instructions: str = Field(default="", max_length=2000)
 
 
 @router.post("/cover-letter-from-text")
@@ -24,7 +25,8 @@ async def cover_letter_from_text(
     consume_usage(current_user.id, "generation", units=2)
     cover = generate_cover_letter(
         request.resume_text,
-        request.job_description
+        request.job_description,
+        request.improvement_instructions,
     )
 
     return {
