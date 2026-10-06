@@ -112,9 +112,6 @@ export default function LoginPage() {
           <Link href="/forgot-password" className="font-medium text-green-400 hover:text-green-300">
             Forgot password?
           </Link>
-          <p className="mt-2 leading-relaxed">
-            This app does not yet include a reset flow. If you want, I can add a proper reset flow to this project: forgot password page, reset request form, secure token-based reset, email or temp-link flow.
-          </p>
         </div>
 
         <p className="mt-6 text-center text-white/40 text-xs">AI-powered career intelligence platform</p>
