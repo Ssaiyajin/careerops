@@ -101,44 +101,34 @@ test("uses the configured HTTPS backend for the production Vercel frontend", asy
 });
 
 test("allows the private Docker Compose backend over HTTP in production", async () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  process.env.NODE_ENV = "production";
+  jest.replaceProperty(process.env, "NODE_ENV", "production");
   process.env.BACKEND_API_URL = "http://backend:8000";
   fetchMock.mockResolvedValue(new Response("[]", { status: 200 }));
 
-  try {
-    const request = new NextRequest("https://careerops.example/api/history", {
-      headers: { Cookie: `careerops_session=${token}` },
-    });
+  const request = new NextRequest("https://careerops.example/api/history", {
+    headers: { Cookie: `careerops_session=${token}` },
+  });
 
-    const response = await GET(request, context(["history"]));
+  const response = await GET(request, context(["history"]));
 
-    expect(response.status).toBe(200);
-    expect(String(fetchMock.mock.calls[0][0])).toBe(
-      "http://backend:8000/api/history"
-    );
-  } finally {
-    process.env.NODE_ENV = originalNodeEnv;
-  }
+  expect(response.status).toBe(200);
+  expect(String(fetchMock.mock.calls[0][0])).toBe(
+    "http://backend:8000/api/history"
+  );
 });
 
 test("rejects a public HTTP backend in production", async () => {
-  const originalNodeEnv = process.env.NODE_ENV;
-  process.env.NODE_ENV = "production";
+  jest.replaceProperty(process.env, "NODE_ENV", "production");
   process.env.BACKEND_API_URL = "http://api.example.com:8000";
 
-  try {
-    const request = new NextRequest("https://careerops.example/api/history", {
-      headers: { Cookie: `careerops_session=${token}` },
-    });
+  const request = new NextRequest("https://careerops.example/api/history", {
+    headers: { Cookie: `careerops_session=${token}` },
+  });
 
-    const response = await GET(request, context(["history"]));
+  const response = await GET(request, context(["history"]));
 
-    expect(response.status).toBe(500);
-    expect(fetchMock).not.toHaveBeenCalled();
-  } finally {
-    process.env.NODE_ENV = originalNodeEnv;
-  }
+  expect(response.status).toBe(500);
+  expect(fetchMock).not.toHaveBeenCalled();
 });
 
 test("rejects cross-origin mutation requests", async () => {

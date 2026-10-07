@@ -42,10 +42,23 @@ def test_rewrite_receives_uploaded_job_description_and_guidance(monkeypatch):
     )
     monkeypatch.setattr(rewrite_api, "consume_usage", lambda *args, **kwargs: None)
     received = {}
+    formatted_resume = "\n".join(
+        [
+            "Alex Morgan",
+            "alex@example.com | Berlin",
+            "PROFESSIONAL SUMMARY",
+            "Cloud engineer focused on reliable platforms.",
+            "TECHNICAL SKILLS",
+            "Python | AWS | Terraform",
+            "PROFESSIONAL EXPERIENCE",
+            "Platform Engineer | Example Co. | 2022-Present",
+            "• Automated cloud deployments.",
+        ]
+    )
 
     def capture_rewrite(*args, **kwargs):
         received.update(kwargs)
-        return "Updated resume"
+        return formatted_resume
 
     monkeypatch.setattr(rewrite_api, "rewrite_resume", capture_rewrite)
 
@@ -59,6 +72,6 @@ def test_rewrite_receives_uploaded_job_description_and_guidance(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert response.json() == {"rewrite": "Updated resume"}
+    assert response.json() == {"rewrite": formatted_resume}
     assert received["job_description"] == "Senior Cloud Engineer role"
     assert received["improvement_instructions"] == "Emphasize AWS migration work"

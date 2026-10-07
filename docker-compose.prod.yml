@@ -8,25 +8,30 @@ services:
     container_name: careerops-backend
     env_file:
       - ./backend/.env
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - backend-uploads:/app/uploads
       - backend-exports:/app/exports
     restart: unless-stopped
-    mem_limit: 550m
+    environment:
+      APP_ENV: main
+    mem_limit: 300m
+    memswap_limit: 300m
 
   frontend:
     image: ghcr.io/ssaiyajin/careerops-frontend:latest
     container_name: careerops-frontend
     environment:
       BACKEND_API_URL: http://backend:8000
+      NODE_OPTIONS: --max-old-space-size=128
     ports:
       - "3000:3000"
     depends_on:
       - backend
     restart: unless-stopped
-    mem_limit: 300m
+    mem_limit: 200m
+    memswap_limit: 200m
 
 volumes:
   backend-uploads:

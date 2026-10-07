@@ -38,6 +38,15 @@ describe("UploadPage", () => {
       experience_level: "Senior",
       entities: { names: [], organizations: [], locations: [], dates: [], emails: [], phones: [] },
       text_preview: "Sample resume",
+      rewritten_resume: [
+        "Test User",
+        "test@example.com | Berlin",
+        "PROFESSIONAL SUMMARY",
+        "Cloud engineer focused on reliable platforms.",
+        "PROFESSIONAL EXPERIENCE",
+        "Platform Engineer | Example Co. | 2022-Present",
+        "• Automated cloud deployments.",
+      ].join("\n"),
       job_match: { match_score: 72, matched_skills: ["Python"], missing_skills: [] }
     });
 
@@ -80,6 +89,9 @@ describe("UploadPage", () => {
     expect(await screen.findByRole("heading", { name: "Test User" })).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
     expect(screen.getByText("Applied to both documents")).toBeInTheDocument();
+    expect(screen.getByTestId("resume-preview")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "PROFESSIONAL SUMMARY" }))
+      .toBeInTheDocument();
     expect(screen.queryByLabelText("Target job description")).not.toBeInTheDocument();
   });
 

@@ -19,23 +19,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install backend dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run backend tests
+      - name: Install dependencies and run backend tests (500 MB limit)
         env:
           DATABASE_URL: "sqlite:///./test.db"
           JWT_SECRET_KEY: "test-only-secret-not-used-in-prod"
           GEMINI_API_KEY: "test-key"
         run: |
-          alembic upgrade head
-          pytest -v
+          docker run --rm \
+            --memory=500m \
+            --memory-swap=500m \
+            --volume "$GITHUB_WORKSPACE:/workspace" \
+            --workdir /workspace/backend \
+            --env DATABASE_URL \
+            --env JWT_SECRET_KEY \
+            --env GEMINI_API_KEY \
+            --env APP_ENV=dev \
+            python:3.12-slim \
+            sh -ec '
+              apt-get update
+              apt-get install -y --no-install-recommends build-essential libpq-dev
+              rm -rf /var/lib/apt/lists/*
+              python -m pip install --upgrade pip
+              pip install -r requirements.txt
+              alembic upgrade head
+              pytest -v -p no:cacheprovider
+            '
 
   frontend-tests:
     name: Frontend Tests
@@ -47,13 +55,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test -- --runInBand
+      - name: Install dependencies and run frontend checks (500 MB limit)
+        run: |
+          docker run --rm \
+            --memory=500m \
+            --memory-swap=500m \
+            --volume "$GITHUB_WORKSPACE/frontend:/workspace" \
+            --workdir /workspace \
+            --env NODE_OPTIONS=--max-old-space-size=256 \
+            node:20-slim \
+            sh -ec '
+              npm ci
+              npm run lint
+              npm run typecheck
+              npm test -- --runInBand
+            '

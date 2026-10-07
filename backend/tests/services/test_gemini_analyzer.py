@@ -33,3 +33,28 @@ def test_resume_rewriter_returns_source_text_when_gemini_is_unavailable(monkeypa
     )
 
     assert result == source_resume
+
+
+def test_resume_rewriter_requests_ui_ready_content_without_inventing_facts(monkeypatch):
+    prompts = []
+
+    def capture_prompt(prompt):
+        prompts.append(prompt)
+        return "Alex Morgan\nPROFESSIONAL SUMMARY\nCloud engineer."
+
+    monkeypatch.setattr(resume_rewriter, "ask_gemini", capture_prompt)
+
+    result = resume_rewriter.rewrite_resume(
+        resume_text="Alex Morgan\nCloud engineer",
+        skills=["Python"],
+        sections={},
+        experience_level="Mid-level",
+        ats_advice={},
+    )
+
+    assert result == "Alex Morgan\nPROFESSIONAL SUMMARY\nCloud engineer."
+    assert len(prompts) == 1
+    assert "uppercase section headings" in prompts[0]
+    assert 'beginning with "• "' in prompts[0]
+    assert "Never invent employers, titles, dates, qualifications, skills, metrics, or achievements." in prompts[0]
+    assert "do not impose a word count that removes important experience" in prompts[0]

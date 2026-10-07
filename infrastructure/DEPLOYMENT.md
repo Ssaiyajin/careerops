@@ -23,6 +23,13 @@ not publish images, provision cloud resources, or deploy to a VM.
 Terraform modules for GCP, AWS, and Azure, along with
 [`../docker-compose.prod.yml`](../docker-compose.prod.yml), are retained as
 possible future deployment options. They are not used by current production.
+The optional Compose configuration enforces 300 MB for the backend and
+200 MB for the frontend (500 MB combined, with swap disabled for those
+containers); the backend port is internal to the Compose network. GitHub
+Actions runs each backend/frontend validation job inside a container capped
+at 500 MB. Render and Vercel are separate hosting services;
+their memory quotas are controlled independently in each provider's settings,
+so there is no shared 500 MB cap across the current hosted deployment.
 The previous GCP VM deployment procedure has been retired; review network
 exposure, HTTPS termination, secrets management, database backups, and
 deployment automation before enabling any self-hosted/cloud VM target.
