@@ -180,8 +180,6 @@ function ResumePreview({ text }: { text: string }) {
   );
   const contentLines =
     firstSectionIndex === -1 ? visibleLines.slice(1) : visibleLines.slice(firstSectionIndex);
-  let currentSection = "";
-
   return (
     <div
       className="mt-6 max-h-[520px] overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-5"
@@ -207,7 +205,6 @@ function ResumePreview({ text }: { text: string }) {
           {contentLines.map((line, index) => {
             const heading = line.replace(/:$/, "").toUpperCase();
             if (resumeSectionHeadings.has(heading)) {
-              currentSection = heading;
               return (
                 <h5
                   key={`${index}-${line}`}
@@ -231,8 +228,17 @@ function ResumePreview({ text }: { text: string }) {
               );
             }
 
+            const precedingSection = contentLines
+              .slice(0, index)
+              .reverse()
+              .map((previousLine) =>
+                previousLine.replace(/:$/, "").toUpperCase()
+              )
+              .find((previousLine) => resumeSectionHeadings.has(previousLine));
             const isEntryLine =
-              resumeEntrySections.has(currentSection) && line.includes(" | ");
+              precedingSection !== undefined &&
+              resumeEntrySections.has(precedingSection) &&
+              line.includes(" | ");
 
             return (
               <p

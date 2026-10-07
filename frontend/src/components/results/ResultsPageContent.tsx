@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { type ResumeData, useResumeData } from "@/store/resumeStore";
+import { useResumeData } from "@/store/resumeStore";
 import BackgroundEffects from "@/components/ui/BackgroundEffects";
 import PageContainer from "@/components/ui/PageContainer";
 
