@@ -17,7 +17,13 @@ def test_initial_migration_creates_current_schema():
     try:
         command.upgrade(config, "head")
         tables = set(inspect(connection).get_table_names())
-        assert {"users", "resume_analysis", "api_usage_events", "alembic_version"} <= tables
+        assert {
+            "users",
+            "resume_analysis",
+            "api_usage_events",
+            "password_reset_tokens",
+            "alembic_version",
+        } <= tables
     finally:
         connection.close()
         test_engine.dispose()
