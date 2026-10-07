@@ -86,7 +86,9 @@ describe("UploadPage", () => {
 
     unmount();
     render(<ResultsPage />);
-    expect(await screen.findByRole("heading", { name: "Test User" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Test User", level: 1 })
+    ).toBeInTheDocument();
     expect(screen.getByText("85%")).toBeInTheDocument();
     expect(screen.getByText("Applied to both documents")).toBeInTheDocument();
     expect(screen.getByTestId("resume-preview")).toBeInTheDocument();
