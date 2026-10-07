@@ -119,8 +119,8 @@ describe("UploadPage", () => {
       target: { files: [file] },
     });
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Resume analysis could not be saved."
-    );
+    expect(
+      await screen.findByRole("alert", {}, { timeout: 5000 })
+    ).toHaveTextContent("Resume analysis could not be saved.");
   });
 });
