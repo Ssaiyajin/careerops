@@ -133,6 +133,124 @@ function ScrollBox({
   );
 }
 
+const resumeSectionHeadings = new Set([
+  "SUMMARY",
+  "PROFESSIONAL SUMMARY",
+  "PROFILE",
+  "PROFESSIONAL PROFILE",
+  "OBJECTIVE",
+  "CAREER OBJECTIVE",
+  "TECHNICAL SKILLS",
+  "SKILLS",
+  "CORE SKILLS",
+  "CORE COMPETENCIES",
+  "PROFESSIONAL EXPERIENCE",
+  "WORK EXPERIENCE",
+  "EXPERIENCE",
+  "PROJECTS",
+  "EDUCATION",
+  "CERTIFICATIONS",
+  "CERTIFICATES",
+  "LANGUAGES",
+  "AWARDS",
+  "ACHIEVEMENTS",
+  "PUBLICATIONS",
+  "VOLUNTEER EXPERIENCE",
+  "VOLUNTEERING",
+  "ADDITIONAL INFORMATION",
+]);
+
+const resumeEntrySections = new Set([
+  "PROFESSIONAL EXPERIENCE",
+  "WORK EXPERIENCE",
+  "EXPERIENCE",
+  "PROJECTS",
+  "EDUCATION",
+]);
+
+function ResumePreview({ text }: { text: string }) {
+  const lines = text.split(/\r?\n/).map((line) => line.trim());
+  const visibleLines = lines.filter(Boolean);
+  const firstSectionIndex = visibleLines.findIndex((line) =>
+    resumeSectionHeadings.has(line.replace(/:$/, "").toUpperCase())
+  );
+  const headerLines = visibleLines.slice(
+    0,
+    firstSectionIndex === -1 ? 1 : firstSectionIndex
+  );
+  const contentLines =
+    firstSectionIndex === -1 ? visibleLines.slice(1) : visibleLines.slice(firstSectionIndex);
+  let currentSection = "";
+
+  return (
+    <div
+      className="mt-6 max-h-[520px] overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-5"
+      data-testid="resume-preview"
+    >
+      <article className="mx-auto min-h-[480px] max-w-[760px] bg-white px-6 py-8 text-slate-700 shadow-2xl sm:px-12 sm:py-10">
+        {headerLines[0] && (
+          <h4 className="break-words text-center font-sans text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            {headerLines[0]}
+          </h4>
+        )}
+        {headerLines.slice(1).map((line, index) => (
+          <p
+            key={`${index}-${line}`}
+            className="mt-1 break-words text-center text-xs text-slate-500 sm:text-sm"
+          >
+            {line}
+          </p>
+        ))}
+        <div className="mt-5 h-1 rounded-full bg-teal-700" />
+
+        <div className="mt-5 space-y-1">
+          {contentLines.map((line, index) => {
+            const heading = line.replace(/:$/, "").toUpperCase();
+            if (resumeSectionHeadings.has(heading)) {
+              currentSection = heading;
+              return (
+                <h5
+                  key={`${index}-${line}`}
+                  className="mb-2 mt-5 border-b border-teal-700/30 pb-1 text-sm font-bold uppercase tracking-[0.12em] text-teal-800 first:mt-0"
+                >
+                  {heading}
+                </h5>
+              );
+            }
+
+            const bullet = line.match(/^\s*(?:[•●▪◦*-])\s+(.+)$/);
+            if (bullet) {
+              return (
+                <div
+                  key={`${index}-${line}`}
+                  className="relative pl-5 text-sm leading-relaxed text-slate-700"
+                >
+                  <span className="absolute left-1 text-teal-700">•</span>
+                  {bullet[1]}
+                </div>
+              );
+            }
+
+            const isEntryLine =
+              resumeEntrySections.has(currentSection) && line.includes(" | ");
+
+            return (
+              <p
+                key={`${index}-${line}`}
+                className={`whitespace-pre-wrap break-words text-sm leading-relaxed ${
+                  isEntryLine ? "font-semibold text-slate-900" : "text-slate-700"
+                }`}
+              >
+                {line}
+              </p>
+            );
+          })}
+        </div>
+      </article>
+    </div>
+  );
+}
+
 function GenerationProgress({
   label,
   percent,
@@ -687,9 +805,7 @@ export default function ResultsPage() {
                     textColor="text-green-300"
                   />
                 ) : resumeContent ? (
-                  <ScrollBox maxHeight="520px" className="bg-black/30">
-                    {resumeContent}
-                  </ScrollBox>
+                  <ResumePreview text={resumeContent} />
                   ) : (
                   <p className="mt-6 rounded-xl border border-white/10 bg-black/20 p-6 text-center text-white/55">
                     Generate an improved resume to preview and download it here.

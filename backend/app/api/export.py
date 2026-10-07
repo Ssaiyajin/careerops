@@ -63,7 +63,7 @@ async def export_resume(
     generate_docx(
         request.resume_text,
         str(output_file),
-        single_page=True
+        resume=True,
     )
 
     background_tasks.add_task(_cleanup, output_file)

@@ -1,7 +1,11 @@
+from io import BytesIO
+
+from docx import Document
 from fastapi.testclient import TestClient
 from types import SimpleNamespace
 
 from app.auth.dependencies import get_current_user
+from app.api import export as export_api
 from app.main import app
 
 
@@ -39,6 +43,37 @@ def test_cover_letter_and_export_routes_require_auth():
     for path, body in requests:
         response = client.post(path, json=body)
         assert response.status_code == 401
+
+
+def test_resume_export_returns_formatted_docx(monkeypatch):
+    monkeypatch.setitem(
+        app.dependency_overrides,
+        get_current_user,
+        lambda: SimpleNamespace(id=1),
+    )
+    monkeypatch.setattr(export_api, "consume_usage", lambda *_args, **_kwargs: None)
+
+    response = client.post(
+        "/api/export-resume",
+        json={
+            "candidate_name": "Alex Morgan",
+            "email": "alex@example.com",
+            "location": "Berlin",
+            "skills": ["Python"],
+            "resume_text": (
+                "Alex Morgan\nalex@example.com | Berlin\n"
+                "PROFESSIONAL SUMMARY\nCloud engineer."
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    document = Document(BytesIO(response.content))
+    assert document.paragraphs[0].text == "Alex Morgan"
+    assert document.paragraphs[2].text == "PROFESSIONAL SUMMARY"
 
 
 def test_account_deletion_requires_auth():

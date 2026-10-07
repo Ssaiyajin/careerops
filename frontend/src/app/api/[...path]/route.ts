@@ -70,10 +70,26 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
       ? "https://careerops-api-dev.onrender.com"
       : process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
   const backendUrl = new URL(backendUrlValue);
+  const isPrivateComposeBackend =
+    backendUrl.protocol === "http:" &&
+    backendUrl.hostname === "backend" &&
+    backendUrl.port === "8000" &&
+    backendUrl.pathname === "/" &&
+    backendUrl.search === "" &&
+    backendUrl.hash === "" &&
+    backendUrl.username === "" &&
+    backendUrl.password === "";
 
-  if (process.env.NODE_ENV === "production" && backendUrl.protocol !== "https:") {
+  if (
+    process.env.NODE_ENV === "production" &&
+    backendUrl.protocol !== "https:" &&
+    !isPrivateComposeBackend
+  ) {
     return NextResponse.json(
-      { detail: "Production backend URL must use HTTPS. Set BACKEND_API_URL to an HTTPS endpoint." },
+      {
+        detail:
+          "Production backend URL must use HTTPS, except for the private Docker Compose backend.",
+      },
       { status: 500 }
     );
   }

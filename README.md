@@ -128,14 +128,20 @@ Resume text and analysis results are automatically removed from the active datab
 
 Resume text is sent to Google's Gemini API for recommendations and rewriting. Generating a cover letter also sends resume text and the supplied job description to Gemini. These requests are subject to Google's current service terms and data-handling policies. The upload screen requests consent before analysis.
 
-The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; Docker Compose configures it on the private network.
+The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; for Render/Vercel deployments, configure it in Vercel to the HTTPS URL of the matching Render backend.
 
 
 ---
 
-## **Infrastructure**
+## Deployment
 
-- **Terraform modules**: Infrastructure is defined under `infrastructure/` and split into modules for GCP, AWS, and Azure. GCP is the active deploy target (Always Free `e2-micro`, see `infrastructure/DEPLOYMENT.md`); AWS and Azure are implemented and can be enabled when ready.
+The current development and production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. Configure the matching backend URL and environment secrets in those platforms; do not commit `.env` files or production credentials. For Vercel, set the server-side `BACKEND_API_URL` to the HTTPS URL of the corresponding Render backend.
+
+GitHub Actions runs backend tests and frontend lint, type-check, and tests. Deployments are managed by Render and Vercel, not by the GitHub Actions workflow.
+
+## Future cloud infrastructure
+
+- Terraform configurations under `infrastructure/` and the GCP Compose deployment files are retained for possible future expansion only. They are not part of the current production deployment. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for the explicitly inactive GCP runbook.
 
 - **Quick start (local)**:
 
