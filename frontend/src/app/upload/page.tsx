@@ -104,8 +104,8 @@ export default function UploadPage() {
 
       <BackgroundEffects variant="upload" />
 
-      <PageContainer>
-      <div className="flex w-full min-w-0 flex-col items-center text-center">
+      <PageContainer className="min-h-[calc(100svh-4rem)] !py-6 sm:!py-8">
+      <div className="mx-auto flex min-h-[calc(100svh-8rem)] w-full min-w-0 flex-col items-center justify-center py-4 text-center">
         {/* Header */}
         <div className="text-center">
 
@@ -124,7 +124,7 @@ export default function UploadPage() {
 
         </div>
         {/* JOB DESCRIPTION */}
-        <div className="mx-auto mt-12 w-full max-w-4xl">
+        <div className="mx-auto mt-7 w-full max-w-4xl">
 
           <label className="mb-3 block text-center text-sm text-white/70">
             Paste Job Description
@@ -137,7 +137,8 @@ export default function UploadPage() {
             className="
               mx-auto
               block
-              h-64
+              h-40
+              sm:h-48
               w-full
               rounded-2xl
               border
@@ -157,8 +158,8 @@ export default function UploadPage() {
           className="
           box-border
           min-w-0
-          mt-14
-          mb-20
+          mt-8
+          mb-8
           w-full
           mx-auto
           max-w-4xl
@@ -181,8 +182,8 @@ export default function UploadPage() {
             group
             relative
             flex
-            h-64
-            sm:h-72
+            h-56
+            sm:h-64
             w-full
             cursor-pointer
             flex-col
@@ -251,7 +252,7 @@ export default function UploadPage() {
 
           </label>
 
-          <label className="mt-6 flex items-start gap-3 text-left text-sm text-white/70">
+          <label className="mt-4 flex items-start gap-3 text-left text-sm text-white/70">
             <input
               type="checkbox"
               checked={aiProcessingConsent}

@@ -543,7 +543,7 @@ export default function ResultsPage() {
               Both documents use the job description you added during upload. Add optional guidance to refine either document.
             </p>
 
-            <div className="mx-auto mt-6 flex w-full min-w-0 max-w-4xl flex-col items-center text-center">
+            <div className="mx-auto mt-6 grid w-full min-w-0 justify-items-center text-center">
               <div className="mt-6 w-full max-w-3xl rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.04] p-4 text-center">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <p className="text-sm font-medium text-cyan-100">
