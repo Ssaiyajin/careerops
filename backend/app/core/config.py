@@ -1,7 +1,7 @@
 """
 Centralized backend configuration, read from environment variables so
 the same code works locally, in Docker, and on the OCI deployment.
-See backend/.env.example for the full list of supported variables.
+See backend/.env for the environment-specific variables used locally.
 """
 
 import json

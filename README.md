@@ -90,6 +90,12 @@ The provider abstraction in `backend/app/services/ai_provider.py` is currently a
 ```
 cd backend 
 
+# Fill in the DEV_ and PROD_ values in the ignored backend/.env file.
+# The current dev/main git branch selects the matching profile locally.
+# To override it explicitly:
+# Windows PowerShell: $env:APP_ENV = "dev"  (or "main")
+# macOS/Linux: export APP_ENV=dev           (or main)
+
 python -m venv .venv 
 
 source .venv/bin/activate 
@@ -135,7 +141,7 @@ The browser uses a same-origin Next.js backend-for-frontend. It stores the beare
 
 ## Deployment
 
-The current development and production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. Configure the matching backend URL and environment secrets in those platforms; do not commit `.env` files or production credentials. For Vercel, set the server-side `BACKEND_API_URL` to the HTTPS URL of the corresponding Render backend.
+The current development and production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch.
 
 GitHub Actions runs backend tests and frontend lint, type-check, and tests. Deployments are managed by Render and Vercel, not by the GitHub Actions workflow.
 

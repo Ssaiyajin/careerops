@@ -66,9 +66,7 @@ async function proxyRequest(request: NextRequest, context: RouteContext) {
   }
 
   const backendUrlValue =
-    request.nextUrl.hostname === "careerops-ten.vercel.app"
-      ? "https://careerops-api-dev.onrender.com"
-      : process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+    process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
   const backendUrl = new URL(backendUrlValue);
   const isPrivateComposeBackend =
     backendUrl.protocol === "http:" &&

@@ -3,9 +3,16 @@
 ## Current deployment
 
 Development and production use Render for the FastAPI backend and Vercel for
-the Next.js frontend. Configure the backend URL as the Vercel server-side
-`BACKEND_API_URL` using the HTTPS URL of the matching Render service. Keep
-environment secrets in the platform settings, not in the repository.
+the Next.js frontend. Render's `RENDER_GIT_BRANCH` selects the dev or main
+profile unless `APP_ENV` is explicitly set. Configure separate database URLs,
+JWT secrets, and provider keys in each service's environment settings.
+Configure Vercel's server-side `BACKEND_API_URL` to the matching HTTPS Render
+backend URL for the `dev` branch (Preview) and `main` branch (Production).
+Keep production secrets in platform settings, not in the repository.
+
+For local backend work, fill in both profiles in the ignored
+`backend/.env`. The current local `dev` or `main` Git branch selects the
+matching profile; set `APP_ENV=dev` or `APP_ENV=main` to override it.
 
 GitHub Actions runs tests and frontend quality checks only. Render and Vercel
 deployments are managed by those platforms; this repository's workflow does

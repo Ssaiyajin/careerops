@@ -43,8 +43,8 @@ test("stores login token only in an HttpOnly session cookie", async () => {
   expect(response.headers.get("set-cookie")).toMatch(/SameSite=lax/i);
 });
 
-test("routes the dev Vercel frontend to its HTTPS dev backend", async () => {
-  process.env.BACKEND_API_URL = "http://92.5.118.52:8000";
+test("uses the configured HTTPS backend for the dev Vercel frontend", async () => {
+  process.env.BACKEND_API_URL = "https://careerops-api-dev.onrender.com";
   fetchMock.mockResolvedValue(
     new Response(JSON.stringify({ access_token: token }), {
       status: 200,
@@ -70,6 +70,34 @@ test("routes the dev Vercel frontend to its HTTPS dev backend", async () => {
     "https://careerops-api-dev.onrender.com/api/auth/register"
   );
   expect(response.headers.get("set-cookie")).toContain("HttpOnly");
+});
+
+test("uses the configured HTTPS backend for the production Vercel frontend", async () => {
+  process.env.BACKEND_API_URL = "https://careerops-api.onrender.com";
+  fetchMock.mockResolvedValue(
+    new Response(JSON.stringify({ access_token: token }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    })
+  );
+  const request = new NextRequest(
+    "https://careerops.example.com/api/auth/login",
+    {
+      method: "POST",
+      headers: {
+        Origin: "https://careerops.example.com",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: "user@example.com", password: "secret" }),
+    }
+  );
+
+  const response = await POST(request, context(["auth", "login"]));
+
+  expect(response.status).toBe(200);
+  expect(String(fetchMock.mock.calls[0][0])).toBe(
+    "https://careerops-api.onrender.com/api/auth/login"
+  );
 });
 
 test("allows the private Docker Compose backend over HTTP in production", async () => {
