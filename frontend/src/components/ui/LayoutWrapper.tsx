@@ -17,7 +17,7 @@ export default function LayoutWrapper({
   return (
     <>
       {!hideNavbar && <Navbar />}
-      {children}
+      <div className={hideNavbar ? "" : "pt-16"}>{children}</div>
     </>
   );
 }

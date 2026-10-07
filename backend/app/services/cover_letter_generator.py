@@ -2,7 +2,8 @@ from app.services.gemini_analyzer import ask_gemini
 
 def generate_cover_letter(
     resume_text,
-    job_description
+    job_description,
+    improvement_instructions="",
 ):
 
     prompt = f"""
@@ -49,6 +50,9 @@ def generate_cover_letter(
     - This applicant
 
     This is a cover letter written by the candidate.
+    Additional candidate guidance:
+    {improvement_instructions or "None"}
+
     Resume:
     {resume_text}
 

@@ -1,6 +1,9 @@
+import asyncio
+import logging
+from contextlib import asynccontextmanager, suppress
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
 
 from app.api.resume import router as resume_router
 from app.api.history import router as history_router
@@ -9,22 +12,39 @@ from app.api.rewrite import router as rewrite_router
 from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
 from app.api.auth import router as auth_router
-
-from app.database.models import Base
-from app.database.db import engine
+from app.database.database_service import purge_expired_resume_analyses
+from app.database.migrations import upgrade_database_schema
 
 print("CAREEROPS BACKEND STARTING")
 
-# Initialize database tables on startup
+
+async def _resume_retention_sweeper():
+    while True:
+        try:
+            deleted_count = await asyncio.to_thread(purge_expired_resume_analyses)
+            if deleted_count:
+                logging.info("Purged %s expired resume analyses", deleted_count)
+            retry_after = 24 * 60 * 60
+        except Exception:
+            logging.exception("Resume retention sweep failed")
+            retry_after = 15 * 60
+        await asyncio.sleep(retry_after)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    print("Creating database tables...")
-    Base.metadata.create_all(bind=engine)
-    print("Database tables created successfully")
-    yield
-    # Shutdown
-    print("Application shutting down")
+    logging.info("Applying database migrations")
+    await asyncio.to_thread(upgrade_database_schema)
+    logging.info("Database migrations are up to date")
+
+    task = asyncio.create_task(_resume_retention_sweeper())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -35,7 +55,6 @@ app.add_middleware(
         "http://localhost:3000",
         "http://localhost:3001",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

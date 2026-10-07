@@ -20,6 +20,7 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
 
   const [jobDescription, setJobDescription] = useState("");
+  const [aiProcessingConsent, setAiProcessingConsent] = useState(false);
 
   const handleFileChange = async (
   event: React.ChangeEvent<HTMLInputElement>
@@ -28,7 +29,6 @@ export default function UploadPage() {
       const file = event.target.files?.[0];
 
       if (!file) return;
-      console.log("FILE SELECTED:", file.name);
       setFileName(file.name);
 
       setUploading(true);
@@ -52,9 +52,7 @@ export default function UploadPage() {
 
         }, 300);
         
-        console.log("CALLING BACKEND...");
         // REAL backend upload
-        console.log("Starting upload...");
 
         setStatus("Uploading Resume...");
         setProgress(20);
@@ -74,17 +72,12 @@ export default function UploadPage() {
         setStatus("Running AI Analysis...");
         setProgress(80);
 
-        const data = await uploadResume(
-          file,
-          jobDescription
-        );
+        const data = await uploadResume(file, jobDescription);
 
         setStatus("Analysis Complete");
         setProgress(100);
 
-        console.log("BACKEND RESPONSE:", data);
-
-        setResumeData(data);
+        setResumeData({ ...data, job_description: jobDescription });
 
         setTimeout(() => {
           router.push("/results");
@@ -94,11 +87,12 @@ export default function UploadPage() {
 
       } catch (error) {
 
-        console.error("UPLOAD ERROR:", error);
-
         event.target.value = "";
-        
-        alert("Upload failed. Check browser console.");
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "Resume upload failed. Please try again."
+        );
 
         setUploading(false);
       }
@@ -106,12 +100,12 @@ export default function UploadPage() {
 
     
   return (
-    <main className="relative min-h-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen overflow-x-clip overflow-y-visible bg-black text-white">
 
-      <BackgroundEffects />
+      <BackgroundEffects variant="upload" />
 
-      <PageContainer>
-      <div className="flex flex-col items-center text-center">
+      <PageContainer className="min-h-[calc(100svh-4rem)] !py-6 sm:!py-8">
+      <div className="mx-auto flex min-h-[calc(100svh-8rem)] w-full min-w-0 flex-col items-center justify-center py-4 text-center">
         {/* Header */}
         <div className="text-center">
 
@@ -119,7 +113,7 @@ export default function UploadPage() {
             AI Resume Upload
           </div>
 
-          <h1 className="text-6xl font-bold tracking-tight">
+          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
             Upload Resume
           </h1>
 
@@ -130,9 +124,9 @@ export default function UploadPage() {
 
         </div>
         {/* JOB DESCRIPTION */}
-        <div className="mt-12 w-full max-w-4xl">
+        <div className="mx-auto mt-7 w-full max-w-4xl">
 
-          <label className="mb-3 block text-left text-sm text-white/70">
+          <label className="mb-3 block text-center text-sm text-white/70">
             Paste Job Description
           </label>
 
@@ -141,7 +135,10 @@ export default function UploadPage() {
             onChange={(e) => setJobDescription(e.target.value)}
             placeholder="Paste LinkedIn or company job description here..."
             className="
-              h-64
+              mx-auto
+              block
+              h-40
+              sm:h-48
               w-full
               rounded-2xl
               border
@@ -159,15 +156,19 @@ export default function UploadPage() {
         {/* Upload Card */}
         <div
           className="
-          mt-14
-          mb-20
+          box-border
+          min-w-0
+          mt-8
+          mb-8
           w-full
+          mx-auto
           max-w-4xl
           rounded-3xl
           border
           border-green-400/20
           bg-white/5
-          p-8
+          p-5
+          sm:p-8
           backdrop-blur-xl
           transition-all
           duration-500
@@ -181,7 +182,8 @@ export default function UploadPage() {
             group
             relative
             flex
-            h-72
+            h-56
+            sm:h-64
             w-full
             cursor-pointer
             flex-col
@@ -211,7 +213,8 @@ export default function UploadPage() {
               accept=".pdf"
               data-testid="upload-file-input"
               onChange={handleFileChange}
-              className="text-white"
+              disabled={!aiProcessingConsent || uploading}
+              className="sr-only"
             />
 
             {/* Upload Icon */}
@@ -242,16 +245,28 @@ export default function UploadPage() {
 
             {/* File Name */}
             {fileName && (
-              <div className="mt-6 rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300 ">
+              <div className="mt-6 max-w-[90%] truncate rounded-full bg-green-500/10 px-5 py-2 text-sm text-green-300 ">
                 {fileName}
               </div>
             )}
 
           </label>
 
+          <label className="mt-4 flex items-start gap-3 text-left text-sm text-white/70">
+            <input
+              type="checkbox"
+              checked={aiProcessingConsent}
+              onChange={(event) => setAiProcessingConsent(event.target.checked)}
+              className="mt-1 accent-green-500"
+            />
+            <span>
+              I understand that my resume text is sent to an AI model for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to an AI model. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
+            </span>
+          </label>
+
           {/* Upload Progress */}
           {uploading && (
-            <div className="mt-8">
+            <div className="mt-8 box-border w-full min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/25 p-5">
 
               <div className="mb-4 text-center">
 
@@ -261,15 +276,23 @@ export default function UploadPage() {
 
               </div>
 
-              <div className="mb-3 flex justify-between text-sm text-white/60">
-                <span>CareerOps Processing</span>
-                <span>{progress}%</span>
+              <div className="mb-3 flex min-w-0 justify-between gap-3 text-sm text-white/60">
+                <span className="truncate">CareerOps Processing</span>
+                <span className="shrink-0">{progress}%</span>
               </div>
 
-              <div className="h-3 overflow-hidden rounded-full bg-white/10">
+              <div
+                role="progressbar"
+                aria-label="Resume analysis progress"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+                className="box-border h-3 w-full min-w-0 overflow-hidden rounded-full bg-white/10"
+              >
 
                 <div
                   className="
+                    max-w-full
                     h-full
                     rounded-full
                     bg-gradient-to-r
@@ -286,6 +309,11 @@ export default function UploadPage() {
               </div>
 
             </div>
+          )}
+          {!uploading && status && status !== "Analysis Complete" && (
+            <p role="alert" className="mt-6 rounded-xl border border-red-400/30 bg-red-500/10 p-4 text-left text-sm text-red-200">
+              {status}
+            </p>
           )}
                 
         </div>

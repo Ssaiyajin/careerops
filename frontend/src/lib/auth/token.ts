@@ -1,19 +1,40 @@
-const TOKEN_KEY = "careerops_token";
+import { clearResumeData } from "@/store/resumeStore";
 
-export const saveToken = (token: string) => {
-  localStorage.setItem("careerops_token", token);
-};
+const SESSION_HINT_KEY = "careerops_authenticated";
 
-export const getToken = () => {
-  return localStorage.getItem("careerops_token");
-};
+export const markSessionActive = () => {
+  if (typeof window === "undefined") return;
 
-export const logout = () => {
+  localStorage.setItem(SESSION_HINT_KEY, "true");
   localStorage.removeItem("careerops_token");
+  document.cookie = "careerops_token=; Max-Age=0; Path=/; SameSite=Lax";
+};
+
+export const clearSessionHint = () => {
+  if (typeof window === "undefined") return;
+
+  localStorage.removeItem(SESSION_HINT_KEY);
+  localStorage.removeItem("careerops_token");
+  clearResumeData();
+  document.cookie = "careerops_token=; Max-Age=0; Path=/; SameSite=Lax";
+};
+
+export const logout = async () => {
+  if (typeof window === "undefined") return;
+
+  clearSessionHint();
+  try {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+  } catch {
+    // The browser-side session hint is cleared even when the server is offline.
+  }
 };
 
 export const isLoggedIn = () => {
   if (typeof window === "undefined") return false;
 
-  return !!localStorage.getItem("careerops_token");
+  return localStorage.getItem(SESSION_HINT_KEY) === "true";
 };

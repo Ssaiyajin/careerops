@@ -1,11 +1,11 @@
 # careerops
-Cloud-native AI career intelligence platform built with modern frontend, backend, DevOps, and self-hosted LLM infrastructure.
+CareerOps is a resume analysis and career-support application built with a Next.js frontend, FastAPI backend, and Google Gemini API.
 
 # CareerOps AI Platform
 
 ## 🚀 Overview
 
-CareerOps is a **cloud-native AI career intelligence platform** designed to analyze resumes, match job descriptions, identify skill gaps, and provide AI-powered career guidance.
+CareerOps analyzes resumes, compares resume skills with job descriptions, identifies skill gaps, and generates AI-assisted resume content.
 
 It is built as a **real-world engineering system**, not a tutorial project, combining:
 
@@ -14,8 +14,7 @@ It is built as a **real-world engineering system**, not a tutorial project, comb
 - Frontend Development
 - DevOps
 - Cloud Infrastructure
-- MLOps
-- Self-hosted AI systems
+- External AI service integration
 
 ---
 
@@ -29,28 +28,32 @@ To build a production-grade AI platform that demonstrates:
 - Modern DevOps practices
 - Real AI/ML pipelines
 
+### First-release focus
+
+The first release prioritizes secure resume analysis against the user's actual job description, reliable results and per-account history, and clear privacy controls. The broader AI career assistant remains future scope.
+
 ---
 
-## ✨ Core Features (Planned)
+### ✨ Features and Status
 
-### 📄 Resume Intelligence
-- Resume upload (PDF)
-- Text extraction
-- Skill detection
-- Resume quality scoring
-- ATS optimization insights
+#### Implemented
+- PDF resume upload and text extraction
+- Skill and contact extraction
+- Resume analysis and job-description skill matching
+- Resume rewriting, cover-letter generation, and resume recommendations through Google Gemini
+- Resume history and DOCX export
 
-### 💼 Job Matching Engine
-- Job description analysis
-- Semantic matching
-- Skill gap detection
-- Ranking system
+The ATS score is a deterministic heuristic based on extracted skills, contact details, resume length, and a small set of certification keywords. It is not produced by an AI model and does not predict the score from a specific applicant tracking system. Semantic matching is optional and depends on its backend setting.
 
-### 🤖 AI Career Assistant
-- Resume improvement suggestions
-- Interview question generation
-- Learning roadmap generation
-- Career guidance chatbot
+Gemini requests use the external Google Gemini API with the `gemini-2.5-flash` model and require `GEMINI_API_KEY`. Resume recommendations, rewrites, and cover letters are therefore subject to provider availability, terms, and usage costs.
+
+The provider abstraction in `backend/app/services/ai_provider.py` is currently a stub and is not used by these workflows. Ollama, Mistral, and Phi-3 are not currently supported providers.
+
+#### Planned
+- Career guidance chat
+- Interview preparation and question generation
+- Personalized learning plans and roadmaps
+- A working provider abstraction and optional self-hosted model support
 
 ---
 
@@ -73,11 +76,9 @@ To build a production-grade AI platform that demonstrates:
 - SpaCy
 - PyMuPDF
 
-#### AI 
+#### AI
 
-- Ollama
-- Mistral
-- Phi-3 Mini
+- Google Gemini API (`gemini-2.5-flash`) for resume recommendations, rewriting, and cover letters
 
 ---
 
@@ -89,6 +90,12 @@ To build a production-grade AI platform that demonstrates:
 ```
 cd backend 
 
+# Fill in the DEV_ and PROD_ values in the ignored backend/.env file.
+# The current dev/main git branch selects the matching profile locally.
+# To override it explicitly:
+# Windows PowerShell: $env:APP_ENV = "dev"  (or "main")
+# macOS/Linux: export APP_ENV=dev           (or main)
+
 python -m venv .venv 
 
 source .venv/bin/activate 
@@ -99,6 +106,7 @@ source .venv/bin/activate
 
 pip install -r requirements.txt 
 
+alembic upgrade head
 uvicorn app.main:app --reload
 
 ```
@@ -118,42 +126,35 @@ npm run dev
 
 ### Roadmap
 
-## V1
+Career chat, interview preparation, and personalized learning plans remain future scope. The current AI provider implementation uses Gemini directly; alternative providers and self-hosted inference are not wired up yet.
 
-- Resume Upload
-- ATS Analysis
-- Skill Extraction
-- Job Matching
-- AI Recommandation
+### Privacy and Account Lifecycle
 
-## V2
+Resume text and analysis results are automatically removed from the active database after 90 days (`RESUME_RETENTION_DAYS`, swept daily). The History page also provides immediate account deletion for the account, saved analyses, and usage events. Managed database backups are outside the application; the release policy is a maximum 30-day backup retention, which must be configured and verified with the database provider.
 
-- Gemini Integration
-- OpenRouter Support
-- PostgreSQL Database
-- User Authentication
-- Resume History
-- Resume Rewrite
-- Cover Letter Generation
+Resume text is sent to Google's Gemini API for recommendations and rewriting. Generating a cover letter also sends resume text and the supplied job description to Gemini. These requests are subject to Google's current service terms and data-handling policies. The upload screen requests consent before analysis.
 
-## V3
-
-- AI Career Assistant
-- Cloud Deployment
+The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; for Render/Vercel deployments, configure it in Vercel to the HTTPS URL of the matching Render backend.
 
 
 ---
 
-## **Infrastructure**
+## Deployment
 
-- **Terraform modules**: Infrastructure is defined under `infrastructure/` and split into modules for OCI, AWS, and Azure. OCI modules are fully configured; AWS and Azure are implemented and can be enabled when ready.
+The current development and production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch.
+
+GitHub Actions runs backend tests and frontend lint, type-check, and tests. Deployments are managed by Render and Vercel, not by the GitHub Actions workflow.
+
+## Future cloud infrastructure
+
+- Terraform configurations under `infrastructure/` and the GCP Compose deployment files are retained for possible future expansion only. They are not part of the current production deployment. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for the explicitly inactive GCP runbook.
 
 - **Quick start (local)**:
 
 ```powershell
 cd infrastructure
-# configure credentials in environment: AWS credentials or `az login` for Azure; OCI vars via env or tfvars
-# optionally create a `terraform.tfvars` with values for tenancy_ocid, compartment_ocid, etc.
+# configure credentials in environment: GOOGLE_APPLICATION_CREDENTIALS for GCP; AWS credentials or `az login` for Azure
+# optionally create a `terraform.tfvars` with values for gcp_project, gcp_ssh_public_key, etc.
 terraform init
 terraform fmt -recursive
 terraform validate
@@ -166,9 +167,9 @@ terraform plan -var='enable_aws=false' -var='enable_azure=false'
 	- Set `enable_azure = true` and provide `resource_group_name`, `location`, `admin_ssh_public_key`, `vnet_cidr`, and `subnet_cidr` to deploy the Azure stack.
 
 - **Notes**:
+	- GCP credentials are picked up via Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` pointing at a service account key), or `gcloud auth application-default login` locally.
 	- AWS credentials are picked up from the environment/profile; ensure `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, or configure an AWS profile.
 	- Azure uses the AzureRM provider; authenticate with `az login` or environment variables.
-	- OCI credentials remain required for OCI module usage.
 
 
 ## Author ✨

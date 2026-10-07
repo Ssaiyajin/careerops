@@ -1,4 +1,7 @@
-from app.services.gemini_analyzer import ask_gemini
+from app.services.gemini_analyzer import (
+    GEMINI_UNAVAILABLE_RESPONSE,
+    ask_gemini,
+)
 
 
 def rewrite_resume(
@@ -6,7 +9,9 @@ def rewrite_resume(
     skills: list,
     sections: dict,
     experience_level: str,
-    ats_advice: dict
+    ats_advice: dict,
+    job_description: str = "",
+    improvement_instructions: str = "",
 ):
 
     prompt = f"""
@@ -28,32 +33,24 @@ def rewrite_resume(
         
         IMPORTANT LENGTH RULES:
 
-        - HARD LIMIT: 450 words maximum.
-        - HARD LIMIT: 1 page maximum.
+        - Keep the resume concise, usually 1-2 pages depending on the source content.
         - Maximum 3 bullets per job.
         - Maximum 2 bullets per project.
-        - Professional Summary maximum 3 lines.
+        - Professional Summary maximum 3 concise sentences.
         - Keep only the strongest projects.
         - Remove duplicate technologies.
         - Remove weak academic descriptions.
         - Remove filler words.
         - Prefer concise recruiter-style wording.
-        If content exceeds one page,
-        remove less important information until it fits.
-        
-        If content exceeds one page:
 
-        - prioritize recent experience
-        - prioritize DevOps projects
-        - prioritize cloud projects
-        - compress older experience
-        - remove weak bullet points
         OUTPUT STYLE:
 
-        - Modern ATS-friendly resume.
-        - Compact spacing.
-        - Recruiter-friendly formatting.
-        - Designed to fit on a single page.
+        - Modern, polished, ATS-friendly resume that keeps the uploaded resume's facts and recognizable section order.
+        - Use a clear hierarchy: candidate name, one contact-details line, uppercase section headings, then concise content.
+        - Put each job or project title, organization, and dates together on one line when the source provides them.
+        - Put achievements on separate lines beginning with "• ".
+        - Keep skills concise and grouped on readable lines.
+        - Use plain text only; do not use markdown, tables, columns, decorative symbols, or code fences.
 
         RECRUITER RULES:
 
@@ -61,7 +58,7 @@ def rewrite_resume(
         - Prioritize AWS, Terraform, Kubernetes, Docker, Python, CI/CD and Cloud Engineering experience.
         - Remove weak academic descriptions.
         - Focus on measurable achievements.
-        - Keep resume between 450 and 600 words.
+        - Preserve relevant source content; do not impose a word count that removes important experience.
         - Use concise bullet points.
         - Avoid long paragraphs.
         - Prefer business impact over technical explanations.
@@ -76,6 +73,12 @@ def rewrite_resume(
         - Education
         - Certifications
         - Languages
+
+        FACTUAL ACCURACY:
+
+        - Never invent employers, titles, dates, qualifications, skills, metrics, or achievements.
+        - Preserve the candidate's actual contact information and the original meaning of their experience.
+        - If source content is unclear, omit the uncertain detail rather than guessing.
 
         IMPROVE:
 
@@ -111,6 +114,12 @@ def rewrite_resume(
         Missing ATS Keywords:
         {ats_advice.get("missing_keywords", [])}
 
+        TARGET JOB DESCRIPTION:
+        {job_description or "Not provided"}
+
+        ADDITIONAL USER GUIDANCE:
+        {improvement_instructions or "None"}
+
         RAW RESUME:
 
         {resume_text}
@@ -119,7 +128,7 @@ def rewrite_resume(
 
         FULL NAME
 
-        CONTACT INFORMATION
+        Email | Phone | Location | LinkedIn (include only details present in the source)
 
         PROFESSIONAL SUMMARY
 
@@ -138,4 +147,7 @@ def rewrite_resume(
         
     """
     
-    return ask_gemini(prompt)
+    rewritten_resume = ask_gemini(prompt)
+    if rewritten_resume == GEMINI_UNAVAILABLE_RESPONSE:
+        return resume_text
+    return rewritten_resume

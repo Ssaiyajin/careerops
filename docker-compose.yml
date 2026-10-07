@@ -1,5 +1,5 @@
 # Local development. Includes a local Postgres for convenience —
-# don't use this file on the 1GB OCI VM (see docker-compose.prod.yml).
+# don't use this file on the 1GB GCP VM (see docker-compose.prod.yml).
 services:
   postgres:
     image: postgres:16-alpine
@@ -33,9 +33,9 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     container_name: careerops-frontend
+    environment:
+      BACKEND_API_URL: ${BACKEND_API_URL:-http://backend:8000}
     ports:
       - "3000:3000"
     depends_on:

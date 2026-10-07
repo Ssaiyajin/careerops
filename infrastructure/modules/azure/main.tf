@@ -1,13 +1,3 @@
-
-variable "enabled" { type = bool }
-variable "location" { type = string }
-variable "resource_group_name" { type = string }
-variable "vnet_cidr" { type = string }
-variable "subnet_cidr" { type = string }
-variable "vm_size" { type = string }
-variable "admin_username" { type = string }
-variable "admin_ssh_public_key" { type = string }
-
 resource "azurerm_resource_group" "this" {
   count = var.enabled ? 1 : 0
   name     = var.resource_group_name
@@ -104,6 +94,13 @@ resource "azurerm_network_interface_security_group_association" "this" {
 resource "azurerm_linux_virtual_machine" "this" {
   count = var.enabled ? 1 : 0
 
+  lifecycle {
+    precondition {
+      condition     = trimspace(var.admin_ssh_public_key) != "" && var.admin_ssh_public_key != "REPLACE_WITH_SSH_PUBLIC_KEY"
+      error_message = "Set azure_admin_ssh_public_key to a real SSH public key before enabling Azure."
+    }
+  }
+
   name                = "careerops-azure-vm"
   resource_group_name = azurerm_resource_group.this[0].name
   location            = var.location
@@ -112,6 +109,11 @@ resource "azurerm_linux_virtual_machine" "this" {
 
   network_interface_ids = [azurerm_network_interface.this[0].id]
 
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
   admin_ssh_key {
     username   = var.admin_username
     public_key = var.admin_ssh_public_key
@@ -119,7 +121,7 @@ resource "azurerm_linux_virtual_machine" "this" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "UbuntuServer"
+    offer     = "0001-com-ubuntu-server-jammy"
     sku       = "22_04-lts"
     version   = "latest"
   }

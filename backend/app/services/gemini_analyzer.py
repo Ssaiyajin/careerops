@@ -1,7 +1,10 @@
 import os
+import logging
 import time
 
 client = None
+logger = logging.getLogger(__name__)
+GEMINI_UNAVAILABLE_RESPONSE = "Gemini temporarily unavailable."
 
 
 def get_client():
@@ -19,7 +22,11 @@ def get_client():
 
 def ask_gemini(prompt: str):
 
-    client = get_client()
+    try:
+        client = get_client()
+    except Exception:
+        logger.exception("Failed to initialize Gemini client")
+        return GEMINI_UNAVAILABLE_RESPONSE
 
     for attempt in range(3):
 
@@ -34,14 +41,11 @@ def ask_gemini(prompt: str):
 
         except Exception as e:
 
-            print(
-                f"Gemini attempt {attempt + 1} failed:",
-                e
-            )
+            logger.warning("Gemini attempt %s failed: %s", attempt + 1, e)
 
             time.sleep(2)
 
-    return "Gemini temporarily unavailable."
+    return GEMINI_UNAVAILABLE_RESPONSE
 
 def generate_gemini_recommendations(text: str):
 

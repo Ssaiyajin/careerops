@@ -1,10 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getHistory } from "@/lib/api";
+import type { ResumeHistoryItem } from "@/lib/api/history";
+import { deleteAccount } from "@/lib/auth/auth";
+import { logout } from "@/lib/auth/token";
+import BackgroundEffects from "@/components/ui/BackgroundEffects";
 
 export default function HistoryPage() {
-  const [history, setHistory] = useState<any[]>([]);
+  const router = useRouter();
+  const [history, setHistory] = useState<ResumeHistoryItem[]>([]);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Delete your account and all saved resume data? This cannot be undone.")) {
+      return;
+    }
+
+    setDeletingAccount(true);
+    try {
+      await deleteAccount();
+      await logout();
+      router.replace("/");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Account deletion failed.");
+      setDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -22,15 +45,7 @@ export default function HistoryPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-black text-white">
 
-      {/* CareerOps Background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-[#03110a] to-black" />
-        <div className="ai-grid" />
-
-        <div className="glow green top-[10%] left-[8%]" />
-        <div className="glow blue top-[25%] right-[10%]" />
-        <div className="glow purple bottom-[-120px] left-[25%]" />
-      </div>
+      <BackgroundEffects variant="history" />
 
       <div
         className="
@@ -61,6 +76,15 @@ export default function HistoryPage() {
           <p className="mt-4 text-white/60">
             Review previous resume analyses and recommendations.
           </p>
+
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deletingAccount}
+            className="mt-6 rounded-md border border-red-400/40 px-4 py-2 text-sm text-red-300 hover:bg-red-500/10 disabled:opacity-60"
+          >
+            {deletingAccount ? "Deleting account..." : "Delete account and saved data"}
+          </button>
 
         </div>
 
@@ -124,7 +148,7 @@ export default function HistoryPage() {
                     </p>
 
                     <p className="text-cyan-400 text-xl font-bold">
-                      {item.job_match_score}
+                      {item.match_score}
                     </p>
                   </div>
 

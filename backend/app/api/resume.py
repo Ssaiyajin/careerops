@@ -1,9 +1,9 @@
-import shutil
-import traceback
+import logging
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import settings
 from app.services.nlp_processor import process_text
@@ -25,31 +25,24 @@ from app.database.models import User
 
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 UPLOAD_DIR = Path(settings.upload_dir)
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
-
-
-target_job_skills = [
-    "Python",
-    "Docker",
-    "Kubernetes",
-    "Terraform",
-    "AWS",
-    "CI/CD",
-    "FastAPI",
-]
+MAX_RESUME_TEXT_CHARS = 30000
+MAX_JOB_DESCRIPTION_CHARS = 20000
 
 
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
-    job_description: str = Form(...),
+    job_description: str = Form(..., min_length=1, max_length=MAX_JOB_DESCRIPTION_CHARS),
     current_user: User = Depends(get_current_user),
 ):
     file_path = None
+    stage = "validating upload"
     try:
         # Validate PDF
         if file.content_type != "application/pdf":
@@ -76,8 +69,15 @@ async def upload_resume(
             buffer.write(contents)
 
         # Extract PDF text
+        stage = "extracting resume text"
         extracted_text = extract_text_from_pdf(str(file_path))
+        if len(extracted_text) > MAX_RESUME_TEXT_CHARS:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Extracted resume text exceeds {MAX_RESUME_TEXT_CHARS} characters.",
+            )
         candidate_name = extract_name(extracted_text)
+        stage = "analyzing resume content"
         tokens = process_text(extracted_text)
 
         # Extract skills
@@ -107,9 +107,11 @@ async def upload_resume(
         extracted_text
         )
         
+        job_description_skills = extract_skills(job_description)
+        stage = "matching resume to job description"
         job_match_data = match_resume_to_job(
-        skills,
-        target_job_skills
+            skills,
+            job_description_skills,
         )
         
         semantic_match_data = semantic_job_match(
@@ -117,6 +119,7 @@ async def upload_resume(
         job_description
         )
 
+        stage = "generating resume rewrite"
         rewritten_resume = rewrite_resume(
         extracted_text,
         skills,
@@ -124,6 +127,7 @@ async def upload_resume(
         experience_level,
         ats_advice
     )
+        stage = "generating AI recommendations"
         try:
 
              ai_recommendations = (
@@ -139,10 +143,9 @@ async def upload_resume(
             ai_recommendations = (
                 "AI analysis currently unavailable."
             )
-        print("ATS DATA:", ats_data)
-        print("JOB MATCH:", job_match_data)
         # Save analysis to database, scoped to the logged-in user
-        saved = save_resume_analysis(
+        stage = "saving resume analysis"
+        save_resume_analysis(
             candidate_name=candidate_name,
             email=entities.get("emails", [""])[0]
             if entities.get("emails")
@@ -153,9 +156,6 @@ async def upload_resume(
             resume_text=extracted_text,
             user_id=current_user.id,
             )
-
-        print("DATABASE SAVE:", saved.id)
-
 
         return {
         "message": "Resume processed successfully",
@@ -173,15 +173,30 @@ async def upload_resume(
         "semantic_match": semantic_match_data,
         "ai_recommendations": ai_recommendations,
         "ats_advice": ats_advice,
-        "rewritten_resume": rewritten_resume
+        "rewritten_resume": rewritten_resume,
+        "job_description": job_description,
         }
     
-    except Exception as e:
-        # Log the full traceback server-side only — returning it to
-        # the client leaks internals (file paths, library versions,
-        # sometimes fragments of the request) to whoever calls this.
-        print(f"UPLOAD ERROR: {str(e)}")
-        traceback.print_exc()
+    except HTTPException:
+        raise
+    except Exception as error:
+        if isinstance(error, SQLAlchemyError):
+            original_error = getattr(error, "orig", None)
+            sqlstate = (
+                getattr(original_error, "pgcode", None)
+                or getattr(original_error, "sqlstate", None)
+            )
+            logger.error(
+                "Resume upload failed during %s (database error%s)",
+                stage,
+                f", SQLSTATE {sqlstate}" if sqlstate else "",
+            )
+        else:
+            logger.error(
+                "Resume upload failed during %s (%s)",
+                stage,
+                type(error).__name__,
+            )
         raise HTTPException(
             status_code=500,
             detail="Failed to process resume. Please try again.",
