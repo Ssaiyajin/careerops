@@ -85,25 +85,23 @@ attempt to reconfigure it.
    `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
    GCS state. Do not run import again after it succeeds.
 
-6. For `dev` deployments, create a Render backend service connected to the
-   `dev` branch, then create its deploy hook. Configure
-   `RENDER_DEV_DEPLOY_HOOK_URL` and
-   `RENDER_API_KEY` as repository secrets, plus `RENDER_DEV_SERVICE_ID` as a
-   repository variable. Disable Render's automatic deploy-on-push for Git
-   services managed by this pipeline (including any main-branch service) so
-   pushes cannot bypass the pipeline or deploy twice. The workflow requests
-   the exact dev commit and waits for Render's API to report it as live.
-7. Configure `VERCEL_TOKEN` as a repository secret and `VERCEL_ORG_ID` and
-   `VERCEL_PROJECT_ID` as repository variables. Disable Vercel's automatic
-   Git deployment for the project managed by this pipeline so `main` cannot
-   deploy to Vercel independently. The workflow deploys a preview from
-   `frontend/` and waits for Vercel CLI to finish. Keep the preview
-   `BACKEND_API_URL` configured for the development Render backend.
+6. Keep Render's automatic deploy-on-push enabled for the development
+   backend service, connected to the `dev` branch.
+7. Keep Vercel's automatic Git deployment enabled for the development preview
+   branch, and keep its preview `BACKEND_API_URL` configured for the dev
+   Render backend.
+
+The `dev` pipeline's Render and Vercel jobs are status markers only: they send
+no deployment requests and do not check either platform's deployment result.
+Render and Vercel start their own deployments when they detect the branch
+push, so those deployments can begin before GitHub Actions finishes testing.
+Check the Render and Vercel dashboards for actual deployment status.
 
 ### Normal pipeline runs
 
-Every push to `dev` runs backend and frontend tests, then deploys to Render
-and Vercel in that order. Every push to `main` runs the tests, creates a
+Every push to `dev` runs backend and frontend tests, then displays successful
+Render and Vercel status markers; the platforms deploy automatically on push,
+independently of those markers. Every push to `main` runs the tests, creates a
 Terraform plan, and pauses before apply until an authorized reviewer approves
 it in `gcp-terraform-apply`. After applying the saved plan, the pipeline
 publishes images and deploys the application to the VM over SSH. The plan

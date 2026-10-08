@@ -88,91 +88,28 @@ jobs:
             '
 
   deploy-render-dev:
-    name: Deploy dev backend to Render
+    name: Render auto-deploy stage (dev)
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger and wait for the dev Render deployment
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEV_DEPLOY_HOOK_URL }}
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ vars.RENDER_DEV_SERVICE_ID }}
-          COMMIT_SHA: ${{ github.sha }}
+      - name: Mark Render auto-deploy stage
         run: |
           set -euo pipefail
-          : "${RENDER_DEPLOY_HOOK_URL:?Set the dev Render deploy hook secret}"
-          : "${RENDER_API_KEY:?Set the Render API key secret}"
-          : "${RENDER_SERVICE_ID:?Set the dev Render service ID variable}"
-
-          created_after="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          curl --fail --silent --show-error --request POST \
-            "${RENDER_DEPLOY_HOOK_URL}?ref=${COMMIT_SHA}" >/dev/null
-
-          deadline=$((SECONDS + 1800))
-          while (( SECONDS < deadline )); do
-            deploys="$(curl --fail --silent --show-error \
-              --header "Authorization: Bearer $RENDER_API_KEY" \
-              "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys?limit=20&createdAfter=${created_after}")"
-            deploy="$(jq -c --arg sha "$COMMIT_SHA" \
-              '[.[] | .deploy | select(.commit.id == $sha and .trigger == "deploy_hook")] | first // empty' \
-              <<< "$deploys")"
-
-            if [[ -n "$deploy" ]]; then
-              status="$(jq -r '.status' <<< "$deploy")"
-              case "$status" in
-                live)
-                  echo "Render deployment for $COMMIT_SHA is live."
-                  exit 0
-                  ;;
-                build_failed|update_failed|pre_deploy_failed|canceled)
-                  echo "Render deployment failed with status: $status" >&2
-                  exit 1
-                  ;;
-              esac
-            fi
-            sleep 15
-          done
-
-          echo "Timed out waiting for Render deployment of $COMMIT_SHA." >&2
-          exit 1
+          echo "Render auto-deploy is managed by Render for this dev branch."
+          echo "This green check is a pipeline marker; it does not verify Render's deployment status."
 
   deploy-vercel-dev:
-    name: Deploy dev frontend to Vercel
+    name: Vercel auto-deploy stage (dev)
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: deploy-render-dev
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Deploy preview and wait for Vercel
-        working-directory: frontend
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      - name: Mark Vercel auto-deploy stage
         run: |
           set -euo pipefail
-          : "${VERCEL_TOKEN:?Set the Vercel token secret}"
-          : "${VERCEL_ORG_ID:?Set the Vercel organization ID variable}"
-          : "${VERCEL_PROJECT_ID:?Set the Vercel project ID variable}"
-
-          npm install --global vercel
-          mkdir -p .vercel
-          printf '{"orgId":"%s","projectId":"%s"}\n' \
-            "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
-          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN" \
-            --scope="$VERCEL_ORG_ID"
-          vercel build --token="$VERCEL_TOKEN" --target=preview \
-            --scope="$VERCEL_ORG_ID"
-          vercel deploy --prebuilt --token="$VERCEL_TOKEN" \
-            --scope="$VERCEL_ORG_ID" \
-            --meta "githubCommitRef=dev" \
-            --meta "githubCommitSha=$GITHUB_SHA"
+          echo "Vercel auto-deploy is managed by Vercel for this dev branch."
+          echo "This green check is a pipeline marker; it does not verify Vercel's deployment status."
 
   gcp-import-existing-vm:
     name: Import existing GCP VM (one-time)
