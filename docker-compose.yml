@@ -1,9 +1,6 @@
-# Local development. Includes a local Postgres for convenience —
-# don't use this file on the 1GB GCP VM (see docker-compose.prod.yml).
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: careerops-postgres
     environment:
       POSTGRES_USER: careerops
       POSTGRES_PASSWORD: careerops
@@ -12,37 +9,77 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careerops -d careerops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
 
   backend:
     build:
       context: ./backend
-    container_name: careerops-backend
-    env_file:
-      - ./backend/.env
     environment:
+      APP_ENV: dev
       DATABASE_URL: postgresql://careerops:careerops@postgres:5432/careerops
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-careerops-local-development-only}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "8000:8000"
     volumes:
       - backend-uploads:/app/uploads
       - backend-exports:/app/exports
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
-    container_name: careerops-frontend
     environment:
-      BACKEND_API_URL: ${BACKEND_API_URL:-http://backend:8000}
+      BACKEND_API_URL: http://backend:8000
     ports:
       - "3000:3000"
     depends_on:
       - backend
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./docker/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   backend-uploads:
   backend-exports:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    name: careerops_default

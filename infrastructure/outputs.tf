@@ -13,6 +13,11 @@ output "gcp_instance_public_ip" {
   description = "Public (ephemeral) IP address of the GCE instance"
 }
 
+output "gcp_frontend_url" {
+  value       = length(module.gcp.gcp_instance_public_ip) > 0 ? "http://${module.gcp.gcp_instance_public_ip[0]}:3000" : ""
+  description = "HTTP URL of the optional GCP frontend"
+}
+
 output "aws_instance_id" {
   value       = module.aws_placeholder.aws_instance_id
   description = "EC2 instance ID, empty when AWS is disabled"

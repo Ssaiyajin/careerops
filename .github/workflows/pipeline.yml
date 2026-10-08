@@ -1,13 +1,14 @@
 name: CareerOps CI
 
-# CI runs tests and quality checks only. Render and Vercel deployments are
-# managed separately; cloud infrastructure deployment is intentionally disabled.
+# CI validates the app and deploys to the optional GCP VM from main.
+# Render and Vercel deployments are managed separately.
 
 on:
   pull_request:
     branches: [main, dev]
   push:
     branches: [main, dev]
+  workflow_dispatch:
 
 jobs:
   backend-tests:
@@ -70,3 +71,99 @@ jobs:
               npm run typecheck
               npm test -- --runInBand
             '
+
+  publish-gcp-images:
+    name: Publish GCP container images
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/ssaiyajin/careerops-backend:latest
+            ghcr.io/ssaiyajin/careerops-backend:${{ github.sha }}
+
+      - name: Build and publish frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ghcr.io/ssaiyajin/careerops-frontend:latest
+            ghcr.io/ssaiyajin/careerops-frontend:${{ github.sha }}
+
+  deploy-gcp:
+    name: Deploy to GCP VM
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: publish-gcp-images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Deploy over SSH
+        env:
+          VM_EXTERNAL_IP: ${{ secrets.VM_EXTERNAL_IP || vars.VM_EXTERNAL_IP }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+          VM_KNOWN_HOST: ${{ secrets.VM_KNOWN_HOST || vars.VM_KNOWN_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USERNAME: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          : "${VM_EXTERNAL_IP:?Set VM_EXTERNAL_IP as a repository secret or variable}"
+          : "${VM_SSH_KEY:?Set VM_SSH_KEY as a repository secret}"
+          : "${VM_KNOWN_HOST:?Set VM_KNOWN_HOST as a repository secret or variable}"
+
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$VM_SSH_KEY" > "$HOME/.ssh/careerops-deploy"
+          chmod 600 "$HOME/.ssh/careerops-deploy"
+          printf '%s\n' "$VM_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          ssh_options=(-i "$HOME/.ssh/careerops-deploy" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
+          printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" "ubuntu@$VM_EXTERNAL_IP" \
+            "sudo docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+
+          ssh "${ssh_options[@]}" "ubuntu@$VM_EXTERNAL_IP" 'bash -se' <<'REMOTE'
+          set -euo pipefail
+          cd /home/ubuntu/careerops
+          sudo -u ubuntu git pull --ff-only origin main
+
+          if ! sudo grep -Eq '^DATABASE_URL=.+$' backend/.env ||
+             ! sudo grep -Eq '^JWT_SECRET_KEY=.+$' backend/.env ||
+             sudo grep -Eq '^(DATABASE_URL|JWT_SECRET_KEY)=REPLACE_ME$' backend/.env; then
+            echo "Configure DATABASE_URL and JWT_SECRET_KEY in backend/.env before deployment." >&2
+            exit 1
+          fi
+
+          if [ ! -f monitoring/.env ]; then
+            printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 32)" | sudo tee monitoring/.env >/dev/null
+            sudo chmod 600 monitoring/.env
+          fi
+
+          sudo docker compose -f docker-compose.prod.yml pull
+          sudo docker compose -f docker-compose.prod.yml up -d
+          sudo docker compose --project-name careerops-monitoring \
+            --env-file monitoring/.env -f monitoring/docker-compose.yml pull
+          sudo docker compose --project-name careerops-monitoring \
+            --env-file monitoring/.env -f monitoring/docker-compose.yml up -d
+          REMOTE
