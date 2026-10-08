@@ -162,11 +162,16 @@ The browser uses a same-origin Next.js backend-for-frontend. It stores the beare
 
 The always-on production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. An optional GCP VM deployment is also supported; it can be stopped independently to control costs. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for GCP setup and shutdown instructions.
 
-GitHub Actions runs backend tests and frontend lint, type-check, and tests. A
-successful push to `main` publishes the GCP backend and frontend images to
-GHCR, then deploys them to the optional GCP VM over SSH. Render and Vercel
-deployments remain managed by those platforms. The GCP deployment can also be
-run manually from the `main` branch in GitHub Actions.
+The single GitHub Actions pipeline runs backend tests and frontend
+lint/type-check/tests on pushes and pull requests to `dev` and `main`. On
+`dev`, passing tests trigger the Render backend deployment and then the Vercel
+frontend preview deployment. On `main`, passing tests lead to Terraform init
+and plan; a required GitHub Environment reviewer must approve apply before
+the pipeline publishes the GCP images and deploys them to the VM over SSH.
+The existing VM must be imported into remote Terraform state before the first
+normal `main` deployment. See
+[`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for the
+one-time setup and required GitHub secrets/variables.
 
 ## Optional GCP deployment
 
