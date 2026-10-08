@@ -4,7 +4,7 @@
 // Mirrors the shape of the (now-removed) OCI E2.1.Micro setup.
 
 resource "google_compute_firewall" "ssh" {
-  count = var.enabled ? 1 : 0
+  count = var.enabled && var.manage_firewall ? 1 : 0
 
   name    = "careerops-allow-ssh"
   network = "default"
@@ -20,7 +20,7 @@ resource "google_compute_firewall" "ssh" {
 }
 
 resource "google_compute_firewall" "app" {
-  count = var.enabled ? 1 : 0
+  count = var.enabled && var.manage_firewall ? 1 : 0
 
   name    = "careerops-allow-app"
   network = "default"
@@ -48,6 +48,18 @@ resource "google_compute_instance" "this" {
       condition     = trimspace(var.ssh_public_key) != "" && var.ssh_public_key != "REPLACE_WITH_SSH_PUBLIC_KEY"
       error_message = "Set gcp_ssh_public_key to a real SSH public key before enabling GCP."
     }
+
+    prevent_destroy = true
+
+    ignore_changes = [
+      machine_type,
+      tags,
+      boot_disk[0].initialize_params[0].image,
+      metadata["ssh-keys"],
+      metadata_startup_script,
+      network_interface,
+      service_account,
+    ]
   }
 
   name         = var.name
@@ -55,7 +67,7 @@ resource "google_compute_instance" "this" {
   zone         = var.zone
   project      = var.project
 
-  tags = ["careerops"]
+  tags = var.network_tags
 
   boot_disk {
     initialize_params {

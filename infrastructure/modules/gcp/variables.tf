@@ -55,6 +55,18 @@ variable "ssh_public_key" {
   description = "SSH public key content granted access to the instance"
 }
 
+variable "network_tags" {
+  type        = list(string)
+  description = "Network tags to assign to the instance"
+  default     = ["careerops"]
+}
+
+variable "manage_firewall" {
+  type        = bool
+  description = "Whether this module should create GCP firewall rules"
+  default     = true
+}
+
 variable "startup_script" {
   type        = string
   description = "Path to the startup script run on first boot"

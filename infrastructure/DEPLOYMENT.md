@@ -44,9 +44,46 @@ in the GCP firewall; Prometheus reaches it over the private Docker network.
 Port 80 is plain HTTP; configure HTTPS termination on port 443 before using
 the VM as a public production endpoint.
 
-## Provisioning a separate VM with Terraform
+## Terraform plan, approval, and deployment
 
-The Terraform example targets a new VM only. Set project and SSH values in an
-untracked `infrastructure/terraform.tfvars`, inspect the plan, and review
-estimated charges before applying. Do not apply it to manage the existing
-`careerops` instance.
+The dedicated `.github/workflows/terraform-gcp.yml` workflow manages the
+existing VM separately from the SSH-only application deployment workflow. It
+is manual and only runs from `main`. Its import operation is a one-time step;
+the plan operation refuses to continue until the existing VM is present in
+remote state. The instance resource has `prevent_destroy`, and the plan job
+rejects deletions and replacements. It ignores existing machine type, image,
+network, tags, SSH metadata, and startup script so importing the Debian VM
+does not attempt to reconfigure it.
+
+### One-time setup
+
+1. Choose a globally unique GCS bucket name and run
+   `bash infrastructure/bootstrap-gcp-state.sh` in a shell with `gcloud`
+   authenticated to `careerops-503307`, setting `TF_STATE_BUCKET` to that
+   name. The script creates a private, uniform-access bucket in `us-central1`
+   and enables object versioning. Do not delete this bucket; it stores the
+   Terraform state.
+2. Configure these repository Actions variables:
+   `TF_STATE_BUCKET`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, and
+   `GCP_TERRAFORM_SERVICE_ACCOUNT`. Configure Workload Identity Federation
+   between GitHub Actions and that GCP service account and grant the account
+   the GCP permissions needed to read the VM and manage the Terraform state.
+3. Ensure the existing `VM_SSH_KEY` Actions secret is set. It is used only
+   to derive the SSH public key Terraform requires during import/plan; the
+   imported VM's SSH metadata is ignored.
+4. Create a GitHub Actions Environment named `gcp-terraform-apply` and add
+   required reviewers. The apply job will wait at this environment gate after
+   publishing the plan.
+5. Run **GCP Terraform** from the Actions tab on `main` with
+   `operation=import-existing-vm`. This imports
+   `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
+   GCS state. Do not run import again after it succeeds.
+
+### Normal Terraform and deployment run
+
+Run **GCP Terraform** from `main` with `operation=plan-and-apply`. Review the
+plan in the workflow summary. GitHub pauses the apply job until an authorized
+reviewer approves it in `gcp-terraform-apply`. The apply job uses the exact
+saved plan, then triggers the existing **CareerOps CI** workflow, which runs
+checks, publishes images, and deploys the application over SSH. Terraform
+does not run in that application workflow.
