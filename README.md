@@ -164,8 +164,9 @@ The always-on production deployment uses **Render for the FastAPI backend** and 
 
 The single GitHub Actions pipeline runs backend tests and frontend
 lint/type-check/tests on pushes and pull requests to `dev` and `main`. On
-`dev`, passing tests are followed by jobs that poll Render and Vercel for
-successful deployments of the current commit. On `main`, passing tests lead
+`dev`, passing tests are followed by jobs that trigger deployments if needed
+and poll Render and Vercel for successful deployments of the current commit.
+On `main`, passing tests lead
 to Terraform init and plan; a required GitHub Environment reviewer must
 approve apply before the pipeline publishes the GCP images and deploys them to
 the VM over SSH.

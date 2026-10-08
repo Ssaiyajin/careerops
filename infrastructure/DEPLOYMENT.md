@@ -91,7 +91,7 @@ attempt to reconfigure it.
 
    | Name | Type | Value |
    | --- | --- | --- |
-   | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to read deployments |
+   | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to trigger and inspect deployments |
    | `RENDER_DEV_SERVICE_ID` | Variable or secret | ID of the dev backend service (`srv-...`) |
 
 7. Keep Vercel automatic Git deployment enabled for the development preview
@@ -100,21 +100,27 @@ attempt to reconfigure it.
 
    | Name | Type | Value |
    | --- | --- | --- |
-   | `VERCEL_TOKEN` | Secret | Vercel token with access to this project; used to read deployments |
+   | `VERCEL_TOKEN` | Secret | Vercel token with access to this project; used to create and inspect deployments |
    | `VERCEL_PROJECT_ID` | Variable | Project ID from Vercel project settings (`prj_...`) |
    | `VERCEL_TEAM_ID` | Variable | Team ID for a team-owned project (`team_...`); omit for a personal project |
 
-After tests pass on `dev`, GitHub Actions polls each platform every 15 seconds,
-matching the current commit SHA. The Render step succeeds only when Render
-reports the matching deploy as `live`; the Vercel step succeeds only when the
-matching preview deployment is `READY`. A reported failure or a 20-minute
-timeout fails the corresponding job. Auto-deployment starts when the branch is
-pushed, so the platforms can begin building before GitHub Actions finishes
-testing; the pipeline waits for their status after tests pass.
+After tests pass on `dev`, GitHub Actions first looks for an automatic
+deployment of the current commit. If none exists, it explicitly requests a
+Render deploy for that SHA and creates a Vercel preview deployment from the
+same GitHub commit. This ensures a deployment is requested even when an
+automatic branch deploy was skipped because no tracked app files changed. It
+then polls each platform every 15 seconds. The Render
+step succeeds only when the matching deploy is `live`; the Vercel step
+succeeds only when the matching preview is `READY`. A reported failure or a
+20-minute timeout fails the corresponding job.
 
 The workflow uses Render's
-[List deploys API](https://api-docs.render.com/reference/list-deploys) and
-Vercel's [List deployments API](https://vercel.com/docs/rest-api/deployments/list-deployments).
+[Trigger deploy](https://api-docs.render.com/reference/create-deploy) and
+[List deploys](https://api-docs.render.com/reference/list-deploys) APIs, plus
+Vercel's [Create deployment](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment)
+and [List deployments](https://vercel.com/docs/rest-api/deployments/list-deployments)
+APIs. Existing automatic deployments are reused when found for the same
+commit, avoiding duplicate builds.
 
 ### Normal pipeline runs
 
