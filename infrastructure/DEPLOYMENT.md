@@ -85,23 +85,42 @@ attempt to reconfigure it.
    `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
    GCS state. Do not run import again after it succeeds.
 
-6. Keep Render's automatic deploy-on-push enabled for the development
-   backend service, connected to the `dev` branch.
-7. Keep Vercel's automatic Git deployment enabled for the development preview
-   branch, and keep its preview `BACKEND_API_URL` configured for the dev
-   Render backend.
+6. Keep Render automatic deploy-on-push enabled for the development backend
+   service connected to the `dev` branch. In GitHub repository **Settings >
+   Secrets and variables > Actions**, add:
 
-The `dev` pipeline's Render and Vercel jobs are status markers only: they send
-no deployment requests and do not check either platform's deployment result.
-Render and Vercel start their own deployments when they detect the branch
-push, so those deployments can begin before GitHub Actions finishes testing.
-Check the Render and Vercel dashboards for actual deployment status.
+   | Name | Type | Value |
+   | --- | --- | --- |
+   | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to read deployments |
+   | `RENDER_DEV_SERVICE_ID` | Variable | ID of the dev backend service (`srv-...`) |
+
+7. Keep Vercel automatic Git deployment enabled for the development preview
+   branch, with `BACKEND_API_URL` configured for the dev Render backend. Add
+   these to the same GitHub Actions settings:
+
+   | Name | Type | Value |
+   | --- | --- | --- |
+   | `VERCEL_TOKEN` | Secret | Vercel token with access to this project; used to read deployments |
+   | `VERCEL_PROJECT_ID` | Variable | Project ID from Vercel project settings (`prj_...`) |
+   | `VERCEL_TEAM_ID` | Variable | Team ID for a team-owned project (`team_...`); omit for a personal project |
+
+After tests pass on `dev`, GitHub Actions polls each platform every 15 seconds,
+matching the current commit SHA. The Render step succeeds only when Render
+reports the matching deploy as `live`; the Vercel step succeeds only when the
+matching preview deployment is `READY`. A reported failure or a 20-minute
+timeout fails the corresponding job. Auto-deployment starts when the branch is
+pushed, so the platforms can begin building before GitHub Actions finishes
+testing; the pipeline waits for their status after tests pass.
+
+The workflow uses Render's
+[List deploys API](https://api-docs.render.com/reference/list-deploys) and
+Vercel's [List deployments API](https://vercel.com/docs/rest-api/deployments/list-deployments).
 
 ### Normal pipeline runs
 
-Every push to `dev` runs backend and frontend tests, then displays successful
-Render and Vercel status markers; the platforms deploy automatically on push,
-independently of those markers. Every push to `main` runs the tests, creates a
+Every push to `dev` runs backend and frontend tests, then waits for Render and
+Vercel to report successful deployments of the pushed commit. Every push to
+`main` runs the tests, creates a
 Terraform plan, and pauses before apply until an authorized reviewer approves
 it in `gcp-terraform-apply`. After applying the saved plan, the pipeline
 publishes images and deploys the application to the VM over SSH. The plan

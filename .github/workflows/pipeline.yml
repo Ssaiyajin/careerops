@@ -88,28 +88,125 @@ jobs:
             '
 
   deploy-render-dev:
-    name: Render auto-deploy stage (dev)
+    name: Wait for Render dev deployment
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Mark Render auto-deploy stage
+      - name: Wait for Render to deploy this commit
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_DEV_SERVICE_ID }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          echo "Render auto-deploy is managed by Render for this dev branch."
-          echo "This green check is a pipeline marker; it does not verify Render's deployment status."
+          : "${RENDER_API_KEY:?Set the RENDER_API_KEY Actions secret}"
+          : "${RENDER_SERVICE_ID:?Set the RENDER_DEV_SERVICE_ID Actions variable}"
+
+          deadline=$((SECONDS + 1200))
+          while (( SECONDS < deadline )); do
+            deploys="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $RENDER_API_KEY" \
+              --header "Accept: application/json" \
+              "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys?limit=100")"
+            deploy="$(jq -c --arg sha "$COMMIT_SHA" \
+              '[.[] | .deploy | select(.commit.id == $sha)] | first // empty' \
+              <<< "$deploys")"
+
+            if [[ -n "$deploy" ]]; then
+              status="$(jq -r '.status' <<< "$deploy")"
+              case "$status" in
+                live)
+                  echo "Render deployment for $COMMIT_SHA is live."
+                  exit 0
+                  ;;
+                build_failed|update_failed|pre_deploy_failed|canceled)
+                  echo "Render deployment for $COMMIT_SHA failed with status: $status" >&2
+                  exit 1
+                  ;;
+                created|queued|build_in_progress|update_in_progress|pre_deploy_in_progress)
+                  echo "Render deployment is $status; checking again in 15 seconds."
+                  ;;
+                *)
+                  echo "Unexpected Render deployment status for $COMMIT_SHA: $status" >&2
+                  exit 1
+                  ;;
+              esac
+            else
+              echo "No Render deployment found yet for $COMMIT_SHA; checking again in 15 seconds."
+            fi
+            sleep 15
+          done
+
+          echo "Timed out after 20 minutes waiting for Render deployment of $COMMIT_SHA." >&2
+          exit 1
 
   deploy-vercel-dev:
-    name: Vercel auto-deploy stage (dev)
+    name: Wait for Vercel dev deployment
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: deploy-render-dev
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Mark Vercel auto-deploy stage
+      - name: Wait for Vercel to deploy this commit
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          echo "Vercel auto-deploy is managed by Vercel for this dev branch."
-          echo "This green check is a pipeline marker; it does not verify Vercel's deployment status."
+          : "${VERCEL_TOKEN:?Set the VERCEL_TOKEN Actions secret}"
+          : "${VERCEL_PROJECT_ID:?Set the VERCEL_PROJECT_ID Actions variable}"
+
+          deadline=$((SECONDS + 1200))
+          while (( SECONDS < deadline )); do
+            query=(
+              --data-urlencode "projectId=$VERCEL_PROJECT_ID"
+              --data-urlencode "target=preview"
+              --data-urlencode "branch=dev"
+              --data-urlencode "sha=$COMMIT_SHA"
+              --data-urlencode "limit=20"
+            )
+            if [[ -n "${VERCEL_TEAM_ID:-}" ]]; then
+              query+=(--data-urlencode "teamId=$VERCEL_TEAM_ID")
+            fi
+
+            deployments="$(curl --fail --silent --show-error --get \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              --header "Accept: application/json" \
+              "${query[@]}" \
+              https://api.vercel.com/v7/deployments)"
+            state="$(jq -r '.deployments[0].state // empty' <<< "$deployments")"
+
+            case "$state" in
+              READY)
+                url="$(jq -r '.deployments[0].url // empty' <<< "$deployments")"
+                echo "Vercel preview for $COMMIT_SHA is ready: ${url:-URL not provided}"
+                exit 0
+                ;;
+              ERROR|CANCELED|BLOCKED)
+                message="$(jq -r '.deployments[0].errorMessage // .deployments[0].errorCode // .deployments[0].state' <<< "$deployments")"
+                echo "Vercel deployment for $COMMIT_SHA ended with $state: $message" >&2
+                exit 1
+                ;;
+              BUILDING|INITIALIZING|QUEUED)
+                echo "Vercel deployment is $state; checking again in 15 seconds."
+                ;;
+              "")
+                echo "No Vercel preview found yet for $COMMIT_SHA; checking again in 15 seconds."
+                ;;
+              *)
+                echo "Unexpected Vercel deployment state for $COMMIT_SHA: $state" >&2
+                exit 1
+                ;;
+            esac
+            sleep 15
+          done
+
+          echo "Timed out after 20 minutes waiting for Vercel deployment of $COMMIT_SHA." >&2
+          exit 1
 
   gcp-import-existing-vm:
     name: Import existing GCP VM (one-time)
@@ -157,7 +254,8 @@ jobs:
           trap 'rm -f "$key_file"' EXIT
           printf '%s\n' "$VM_SSH_KEY" > "$key_file"
           chmod 600 "$key_file"
-          export TF_VAR_gcp_ssh_public_key="$(ssh-keygen -y -f "$key_file")"
+          TF_VAR_gcp_ssh_public_key="$(ssh-keygen -y -f "$key_file")"
+          export TF_VAR_gcp_ssh_public_key
 
           terraform -chdir=infrastructure init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
@@ -219,7 +317,9 @@ jobs:
           trap 'rm -f "$key_file"' EXIT
           printf '%s\n' "$VM_SSH_KEY" > "$key_file"
           chmod 600 "$key_file"
-          export TF_VAR_gcp_ssh_public_key="$(ssh-keygen -y -f "$key_file")"
+          TF_VAR_gcp_ssh_public_key="$(ssh-keygen -y -f "$key_file")"
+          export TF_VAR_gcp_ssh_public_key
+          echo "TF_VAR_gcp_ssh_public_key=$TF_VAR_gcp_ssh_public_key" >> "$GITHUB_ENV"
 
           terraform -chdir=infrastructure init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
