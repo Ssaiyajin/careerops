@@ -10,6 +10,16 @@ def test_health():
     assert response.json()["status"] == "healthy"
 
 
+def test_prometheus_metrics_endpoint():
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "http_requests_total" in response.text
+
+
 def test_cors_rejects_untrusted_vercel_origins():
     response = client.get(
         "/health",

@@ -122,6 +122,25 @@ npm run dev
 
 ```
 
+## Docker Compose
+
+From the repository root, run `docker compose up --build` to start the frontend,
+backend, local PostgreSQL database, Prometheus, and Grafana. Open the Grafana
+dashboard at <http://localhost:3001> (default local login: `admin` / `admin`)
+and Prometheus at <http://localhost:9090>. Prometheus scrapes the local backend
+and the live Render backend. The provisioned **CareerOps API Overview**
+dashboard shows backend request rate, p95 latency, response status, and
+in-progress requests. Set `GRAFANA_ADMIN_PASSWORD` and `JWT_SECRET_KEY` before
+starting the stack if you want non-default local credentials; the Compose
+defaults are for local development only.
+
+The GCP VM starts the same monitoring services using
+`monitoring/docker-compose.yml`. Prometheus scrapes the GCP backend over its
+private Docker network and the live Render backend; Grafana and Prometheus bind
+to loopback on the VM. To open Grafana, use an SSH tunnel to the VM's port
+3001. The VM generates the Grafana admin password in the ignored
+`monitoring/.env` file.
+
 --- 
 
 ### Roadmap
@@ -141,35 +160,20 @@ The browser uses a same-origin Next.js backend-for-frontend. It stores the beare
 
 ## Deployment
 
-The current development and production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch.
+The always-on production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. An optional GCP VM deployment is also supported; it can be stopped independently to control costs. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for GCP setup and shutdown instructions.
 
-GitHub Actions runs backend tests and frontend lint, type-check, and tests. Deployments are managed by Render and Vercel, not by the GitHub Actions workflow.
+GitHub Actions runs backend tests and frontend lint, type-check, and tests. A
+successful push to `main` publishes the GCP backend and frontend images to
+GHCR, then deploys them to the optional GCP VM over SSH. Render and Vercel
+deployments remain managed by those platforms. The GCP deployment can also be
+run manually from the `main` branch in GitHub Actions.
 
-## Future cloud infrastructure
+## Optional GCP deployment
 
-- Terraform configurations under `infrastructure/` and the GCP Compose deployment files are retained for possible future expansion only. They are not part of the current production deployment. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for the explicitly inactive GCP runbook.
-
-- **Quick start (local)**:
-
-```powershell
-cd infrastructure
-# configure credentials in environment: GOOGLE_APPLICATION_CREDENTIALS for GCP; AWS credentials or `az login` for Azure
-# optionally create a `terraform.tfvars` with values for gcp_project, gcp_ssh_public_key, etc.
-terraform init
-terraform fmt -recursive
-terraform validate
-terraform plan -var='enable_aws=false' -var='enable_azure=false'
-# To enable AWS or Azure set the flags to true and provide provider credentials/keys
-```
-
-- **Enabling AWS/Azure**:
-	- Set `enable_aws = true` and provide `aws_public_key_path`, `vpc_cidr`, and `public_subnet_cidr` in `terraform.tfvars` to deploy the AWS stack.
-	- Set `enable_azure = true` and provide `resource_group_name`, `location`, `admin_ssh_public_key`, `vnet_cidr`, and `subnet_cidr` to deploy the Azure stack.
-
-- **Notes**:
-	- GCP credentials are picked up via Application Default Credentials (`GOOGLE_APPLICATION_CREDENTIALS` pointing at a service account key), or `gcloud auth application-default login` locally.
-	- AWS credentials are picked up from the environment/profile; ensure `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set, or configure an AWS profile.
-	- Azure uses the AzureRM provider; authenticate with `az login` or environment variables.
+An existing GCP VM can run as an optional deployment while Render remains the
+always-on backend. Follow [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md)
+to configure GitHub Actions, deploy, monitor, and stop the VM. Terraform
+examples are for provisioning a separate VM, not for changing the existing one.
 
 
 ## Author ✨

@@ -1,0 +1,10 @@
+enable_gcp        = true
+gcp_project       = "YOUR_GCP_PROJECT_ID"
+gcp_region        = "us-central1"
+gcp_zone          = "us-central1-a"
+gcp_instance_name = "careerops-vm"
+gcp_machine_type  = "e2-micro"
+gcp_disk_size_gb  = 30
+gcp_disk_type     = "pd-standard"
+gcp_ssh_username  = "ubuntu"
+gcp_ssh_public_key = "REPLACE_WITH_YOUR_SSH_PUBLIC_KEY"

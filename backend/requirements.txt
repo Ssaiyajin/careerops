@@ -12,6 +12,7 @@ alembic==1.16.5
 SQLAlchemy==2.0.50
 psycopg2-binary==2.9.12
 greenlet==3.5.1
+prometheus-fastapi-instrumentator==7.1.0
 
 # Data Validation & Serialization
 pydantic==2.13.4

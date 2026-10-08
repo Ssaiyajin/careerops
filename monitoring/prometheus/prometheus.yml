@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: careerops-render
+    metrics_path: /metrics
+    scheme: https
+    static_configs:
+      - targets:
+          - careerops-ai.onrender.com
+
+  - job_name: careerops-gcp
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - backend:8000

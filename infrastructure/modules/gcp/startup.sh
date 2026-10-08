@@ -20,7 +20,6 @@ systemctl start docker
 # Firewall rules on the GCP side already allow these; this just makes
 # sure Ubuntu's own iptables rules don't also block them.
 iptables -I INPUT -p tcp --dport 3000 -j ACCEPT || true
-iptables -I INPUT -p tcp --dport 8000 -j ACCEPT || true
 
 # Clone the repo for its docker-compose.prod.yml — the VM only ever
 # pulls prebuilt images (see .github/workflows/pipeline.yml), it never
@@ -29,12 +28,18 @@ iptables -I INPUT -p tcp --dport 8000 -j ACCEPT || true
 if [ ! -d /home/ubuntu/careerops ]; then
   git clone -b main https://github.com/Ssaiyajin/careerops.git /home/ubuntu/careerops
   chown -R ubuntu:ubuntu /home/ubuntu/careerops
-  cp /home/ubuntu/careerops/backend/.env.example /home/ubuntu/careerops/backend/.env
-  # IMPORTANT: SSH in afterwards and fill in backend/.env for real —
-  # DATABASE_URL, JWT_SECRET_KEY, GEMINI_API_KEY can't be safely
-  # baked into a startup script.
 fi
 
 cd /home/ubuntu/careerops
-docker compose -f docker-compose.prod.yml pull
-docker compose -f docker-compose.prod.yml up -d
+if [ ! -f monitoring/.env ]; then
+  printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 32)" > monitoring/.env
+  chmod 600 monitoring/.env
+fi
+
+if [ ! -f backend/.env ]; then
+  cp backend/.env.example backend/.env
+fi
+chown ubuntu:ubuntu backend/.env
+chmod 600 backend/.env
+
+echo "VM bootstrap complete. Configure backend/.env, then deploy from GitHub Actions."
