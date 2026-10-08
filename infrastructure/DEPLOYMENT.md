@@ -107,12 +107,14 @@ attempt to reconfigure it.
 After tests pass on `dev`, GitHub Actions first looks for an automatic
 deployment of the current commit. If none exists, it explicitly requests a
 Render deploy for that SHA and creates a Vercel preview deployment from the
-same GitHub commit. This ensures a deployment is requested even when an
-automatic branch deploy was skipped because no tracked app files changed. It
-then polls each platform every 15 seconds. The Render
-step succeeds only when the matching deploy is `live`; the Vercel step
-succeeds only when the matching preview is `READY`. A reported failure or a
-20-minute timeout fails the corresponding job.
+same GitHub commit, targeting the configured project ID in the request body.
+The Vercel request skips framework auto-detection confirmation for CI and
+prints the API's error message if the request is rejected. This ensures a
+deployment is requested even when an automatic branch deploy was skipped
+because no tracked app files changed. It then polls each platform every
+15 seconds. The Render step succeeds only when the matching deploy is `live`;
+the Vercel step succeeds only when the matching preview is `READY`. A reported
+failure or a 20-minute timeout fails the corresponding job.
 
 The workflow uses Render's
 [Trigger deploy](https://api-docs.render.com/reference/create-deploy) and

@@ -216,23 +216,30 @@ jobs:
               echo "Triggering Vercel preview deployment for $COMMIT_SHA."
               body="$(jq -nc \
                 --arg name careerops \
+                --arg project "$VERCEL_PROJECT_ID" \
                 --arg org Ssaiyajin \
                 --arg repo careerops \
                 --arg ref dev \
                 --arg sha "$COMMIT_SHA" \
-                '{name: $name, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}}')"
-              create_url="https://api.vercel.com/v13/deployments?projectId=$VERCEL_PROJECT_ID"
+                '{name: $name, project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}}')"
+              create_url="https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1"
               if [[ -n "${VERCEL_TEAM_ID:-}" ]]; then
                 create_url+="&teamId=$VERCEL_TEAM_ID"
               fi
-              curl --fail --silent --show-error \
+              http_status="$(curl --silent --show-error \
                 --request POST \
                 --header "Authorization: Bearer $VERCEL_TOKEN" \
                 --header "Accept: application/json" \
                 --header "Content-Type: application/json" \
                 --data "$body" \
                 "$create_url" \
-                --output /dev/null
+                --output "$RUNNER_TEMP/vercel-create-response.json" \
+                --write-out '%{http_code}')"
+              if [[ ! "$http_status" =~ ^2 ]]; then
+                echo "Vercel deployment request failed with HTTP $http_status:" >&2
+                jq -r '.error.message // .message // .' "$RUNNER_TEMP/vercel-create-response.json" >&2
+                exit 1
+              fi
               ;;
             *)
               echo "Unexpected existing Vercel deployment state: $existing_state" >&2
