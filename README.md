@@ -170,10 +170,10 @@ run manually from the `main` branch in GitHub Actions.
 
 ## Optional GCP deployment
 
-The Terraform configuration provisions an optional GCP VM while Render remains
-the always-on backend. Follow [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md)
-to review cost assumptions, configure credentials, deploy, monitor, and stop
-the VM.
+An existing GCP VM can run as an optional deployment while Render remains the
+always-on backend. Follow [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md)
+to configure GitHub Actions, deploy, monitor, and stop the VM. Terraform
+examples are for provisioning a separate VM, not for changing the existing one.
 
 
 ## Author ✨

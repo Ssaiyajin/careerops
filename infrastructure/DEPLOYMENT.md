@@ -3,49 +3,50 @@
 ## Current deployment
 
 Render hosts the always-on FastAPI backend and Vercel hosts the Next.js
-frontend. An optional GCP VM can host a second backend/frontend deployment and
-can be stopped when it is not needed. Render's `RENDER_GIT_BRANCH` selects the
-dev or main profile unless `APP_ENV` is explicitly set. Keep production
-secrets in platform settings, not in the repository.
+frontend. The existing GCP VM can host a second backend/frontend deployment
+and can be stopped when it is not needed. Keep production secrets in platform
+settings, not in the repository.
 
-## GCP VM
+## Existing GCP VM
 
-Terraform defaults to an `e2-micro`, 30 GB `pd-standard` disk in an Always Free
-eligible US region. Free-tier eligibility depends on the GCP account, region,
-current Google Cloud terms, and usage; network egress, snapshots, and other
-resources can still incur charges. Review the Terraform plan and billing
-before applying it.
+The existing instance is `careerops` in `us-central1-a`, running Debian 13
+with a 30 GB standard disk and external IP `35.222.133.240`. Its SSH account is
+`deploy`. Do not apply the sample Terraform configuration to this existing
+instance; it is only an example for provisioning a separate VM. GCP charges
+depend on the project, region, running time, network egress, and current
+pricing, so check Billing before running the instance.
 
-1. For a new VM, set `gcp_project`, `gcp_ssh_public_key`, and
-   `enable_gcp = true` in an untracked `infrastructure/terraform.tfvars`.
-   Configure Google Application Default Credentials, initialize Terraform,
-   inspect `terraform plan`, and apply only after reviewing its cost.
-2. On first boot, the startup script clones `main`, creates `backend/.env` from
-   its example, and generates a Grafana password in `monitoring/.env`.
-   Configure the managed PostgreSQL URL and a unique `JWT_SECRET_KEY` in
-   `backend/.env`. Do not put either secret in Terraform variables or commit
-   them.
-3. Configure GitHub Actions secrets/variables named `VM_SSH_KEY`,
-   `VM_KNOWN_HOST`, and `VM_EXTERNAL_IP`. The deploy job uses `ubuntu` as the
-   SSH user and `GITHUB_TOKEN` to authenticate to GHCR.
-4. A successful push to `main` runs backend/frontend checks, publishes both
-   images, then SSHes to the VM to pull the latest repository configuration,
-   deploy the app, and start monitoring. You can also run the workflow
-   manually from the `main` branch to redeploy. Deployment fails explicitly
-   if the database URL or JWT secret is still a placeholder. The GCP
-   backend's `/metrics` endpoint is reachable by Prometheus over the private
-   Docker network; the Render backend is scraped over HTTPS.
-5. Grafana and Prometheus bind to loopback on the VM. Access Grafana through
-   `ssh -L 3001:127.0.0.1:3001 ubuntu@<INSTANCE_IP>`.
+1. Configure GitHub Actions secrets/variables named `VM_SSH_KEY`,
+   `VM_KNOWN_HOST`, and `VM_EXTERNAL_IP`. Set the address and SSH known-hosts
+   entry for the VM's current external IP. The workflow uses the `deploy` SSH
+   account and `GITHUB_TOKEN` to authenticate to GHCR.
+2. Ensure `/home/deploy/careerops/backend/.env` exists on the VM and contains
+   the managed PostgreSQL URL and a unique `JWT_SECRET_KEY`. Do not commit
+   these secrets. On first deployment, the workflow clones the repository but
+   stops with an error if app settings are missing or placeholders.
+3. A successful push to `main` runs backend/frontend checks, publishes both
+   images, then SSHes to the VM to deploy the app and monitoring. You can also
+   run the workflow manually from `main`. The frontend is published on port
+   80, matching the VM's `http-server` network tag. The GCP backend's
+   `/metrics` endpoint is reachable by Prometheus only over the private Docker
+   network; Prometheus also scrapes the Render backend over HTTPS.
+4. Grafana and Prometheus bind to loopback on the VM. Access Grafana through
+   `ssh -L 3001:127.0.0.1:3001 deploy@35.222.133.240`.
 
 Stop the VM when it is not needed with
-`gcloud compute instances stop careerops-vm --zone us-central1-a --project
-<PROJECT_ID>`. To remove the VM and its boot disk/resources instead, run
-`terraform destroy` after reviewing its plan. Do not destroy Terraform state
-or resources outside this stack.
+`gcloud compute instances stop careerops --zone us-central1-a --project careerops-503307`.
+If the external IP is ephemeral, it can change after stopping/starting; update
+`VM_EXTERNAL_IP` and `VM_KNOWN_HOST` in GitHub Actions before the next deploy.
 
 The VM limits the backend to 300 MB and the frontend to 200 MB. Prometheus and
 Grafana are each limited to 150 MB. The backend metrics port 8000 is not open
 in the GCP firewall; Prometheus reaches it over the private Docker network.
-The frontend currently uses port 3000, so configure HTTPS termination before
-using the VM as a public production endpoint.
+Port 80 is plain HTTP; configure HTTPS termination on port 443 before using
+the VM as a public production endpoint.
+
+## Provisioning a separate VM with Terraform
+
+The Terraform example targets a new VM only. Set project and SSH values in an
+untracked `infrastructure/terraform.tfvars`, inspect the plan, and review
+estimated charges before applying. Do not apply it to manage the existing
+`careerops` instance.

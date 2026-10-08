@@ -125,6 +125,7 @@ jobs:
           VM_EXTERNAL_IP: ${{ secrets.VM_EXTERNAL_IP || vars.VM_EXTERNAL_IP }}
           VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
           VM_KNOWN_HOST: ${{ secrets.VM_KNOWN_HOST || vars.VM_KNOWN_HOST }}
+          VM_SSH_USER: deploy
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USERNAME: ${{ github.actor }}
         run: |
@@ -140,13 +141,18 @@ jobs:
           chmod 600 "$HOME/.ssh/known_hosts"
 
           ssh_options=(-i "$HOME/.ssh/careerops-deploy" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
-          printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" "ubuntu@$VM_EXTERNAL_IP" \
+          printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" \
             "sudo docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
 
-          ssh "${ssh_options[@]}" "ubuntu@$VM_EXTERNAL_IP" 'bash -se' <<'REMOTE'
+          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" 'bash -se' <<'REMOTE'
           set -euo pipefail
-          cd /home/ubuntu/careerops
-          sudo -u ubuntu git pull --ff-only origin main
+          APP_DIR="$HOME/careerops"
+          if [ ! -d "$APP_DIR/.git" ]; then
+            git clone --branch main --single-branch https://github.com/Ssaiyajin/careerops.git "$APP_DIR"
+          else
+            git -C "$APP_DIR" pull --ff-only origin main
+          fi
+          cd "$APP_DIR"
 
           if ! sudo grep -Eq '^DATABASE_URL=.+$' backend/.env ||
              ! sudo grep -Eq '^JWT_SECRET_KEY=.+$' backend/.env ||
