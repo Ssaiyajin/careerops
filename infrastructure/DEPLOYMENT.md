@@ -69,19 +69,25 @@ attempt to reconfigure it.
    name. The script creates a private, uniform-access bucket in `us-central1`
    and enables object versioning. Do not delete this bucket; it stores the
    Terraform state.
-2. Configure these repository Actions variables:
-   `TF_STATE_BUCKET`, `GCP_WORKLOAD_IDENTITY_PROVIDER`, and
-   `GCP_TERRAFORM_SERVICE_ACCOUNT`. Configure Workload Identity Federation
-   between GitHub Actions and that GCP service account and grant the account
-   the GCP permissions needed to read the VM and manage the Terraform state.
+2. In **Settings > Secrets and variables > Actions > Variables**, create these
+   repository-level variables: `TF_STATE_BUCKET`,
+   `GCP_WORKLOAD_IDENTITY_PROVIDER`, and `GCP_TERRAFORM_SERVICE_ACCOUNT`.
+   `GCP_WORKLOAD_IDENTITY_PROVIDER` must be the full provider resource name
+   (`projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/POOL_ID/providers/PROVIDER_ID`);
+   `GCP_TERRAFORM_SERVICE_ACCOUNT` must be the service-account email.
+   Configure Workload Identity Federation between GitHub Actions and that
+   service account and grant the account the GCP permissions needed to read
+   the VM and manage the Terraform state. These must be repository variables,
+   not variables scoped only to the `gcp-terraform-apply` environment.
 3. Ensure the existing `VM_SSH_KEY` Actions secret is set. It is used only
    to derive the SSH public key Terraform requires during import/plan; the
    imported VM's SSH metadata is ignored.
 4. Create a GitHub Actions Environment named `gcp-terraform-apply` and add
    required reviewers. The apply job will wait at this environment gate after
    publishing the plan.
-5. Run **CareerOps Pipeline** from the Actions tab on `main` with
-   `operation=import-existing-vm`. This imports
+5. In **Actions > CareerOps Pipeline > Run workflow**, select `main`, choose
+   `import-existing-vm`, and run the workflow. A normal push or merge to
+   `main` does not run this one-time import job. This imports
    `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
    GCS state. Do not run import again after it succeeds.
 
