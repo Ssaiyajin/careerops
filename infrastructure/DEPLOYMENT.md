@@ -24,12 +24,14 @@ pricing, so check Billing before running the instance.
    the managed PostgreSQL URL and a unique `JWT_SECRET_KEY`. Do not commit
    these secrets. On first deployment, the workflow clones the repository but
    stops with an error if app settings are missing or placeholders.
-3. A successful push to `main` runs backend/frontend checks, publishes both
-   images, then SSHes to the VM to deploy the app and monitoring. You can also
-   run the workflow manually from `main`. The frontend is published on port
-   80, matching the VM's `http-server` network tag. The GCP backend's
-   `/metrics` endpoint is reachable by Prometheus only over the private Docker
-   network; Prometheus also scrapes the Render backend over HTTPS.
+3. A successful push to `main` runs backend/frontend checks, initializes and
+   plans Terraform, and waits for approval in the `gcp-terraform-apply`
+   environment before applying the saved plan. Only after approval does it
+   publish images and SSH to the VM to deploy the app and monitoring. The
+   frontend is published on port 80, matching the VM's `http-server` network
+   tag. The GCP backend's `/metrics` endpoint is reachable by Prometheus only
+   over the private Docker network; Prometheus also scrapes the Render backend
+   over HTTPS.
 4. Grafana and Prometheus bind to loopback on the VM. Access Grafana through
    `ssh -L 3001:127.0.0.1:3001 deploy@35.222.133.240`.
 
@@ -46,14 +48,18 @@ the VM as a public production endpoint.
 
 ## Terraform plan, approval, and deployment
 
-The dedicated `.github/workflows/terraform-gcp.yml` workflow manages the
-existing VM separately from the SSH-only application deployment workflow. It
-is manual and only runs from `main`. Its import operation is a one-time step;
-the plan operation refuses to continue until the existing VM is present in
-remote state. The instance resource has `prevent_destroy`, and the plan job
-rejects deletions and replacements. It ignores existing machine type, image,
-network, tags, SSH metadata, and startup script so importing the Debian VM
-does not attempt to reconfigure it.
+The single `.github/workflows/pipeline.yml` workflow has branch-specific
+deployment paths. On `dev`, tests are followed by Render and Vercel deploys.
+On `main`, tests are followed by Terraform init and plan, a required
+`gcp-terraform-apply` environment approval, Terraform apply, image publishing,
+and SSH deployment to the VM. Pull requests run tests only. The Terraform
+import operation is available as a one-time manual operation on `main`.
+
+The plan refuses to continue until the existing VM is present in remote state.
+The instance resource has `prevent_destroy`, and the plan job rejects
+deletions and replacements. It ignores existing machine type, image, network,
+tags, SSH metadata, and startup script so importing the Debian VM does not
+attempt to reconfigure it.
 
 ### One-time setup
 
@@ -74,16 +80,56 @@ does not attempt to reconfigure it.
 4. Create a GitHub Actions Environment named `gcp-terraform-apply` and add
    required reviewers. The apply job will wait at this environment gate after
    publishing the plan.
-5. Run **GCP Terraform** from the Actions tab on `main` with
+5. Run **CareerOps Pipeline** from the Actions tab on `main` with
    `operation=import-existing-vm`. This imports
    `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
    GCS state. Do not run import again after it succeeds.
 
-### Normal Terraform and deployment run
+6. Keep Render automatic deploy-on-push enabled for the development backend
+   service connected to the `dev` branch. In GitHub repository **Settings >
+   Secrets and variables > Actions**, add:
 
-Run **GCP Terraform** from `main` with `operation=plan-and-apply`. Review the
-plan in the workflow summary. GitHub pauses the apply job until an authorized
-reviewer approves it in `gcp-terraform-apply`. The apply job uses the exact
-saved plan, then triggers the existing **CareerOps CI** workflow, which runs
-checks, publishes images, and deploys the application over SSH. Terraform
-does not run in that application workflow.
+   | Name | Type | Value |
+   | --- | --- | --- |
+   | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to trigger and inspect deployments |
+   | `RENDER_DEV_SERVICE_ID` | Variable or secret | ID of the dev backend service (`srv-...`) |
+
+7. Keep Vercel automatic Git deployment enabled for the development preview
+   branch, with `BACKEND_API_URL` configured for the dev Render backend. Add
+   these to the same GitHub Actions settings:
+
+   | Name | Type | Value |
+   | --- | --- | --- |
+   | `VERCEL_TOKEN` | Secret | Vercel token with access to this project; used to create and inspect deployments |
+   | `VERCEL_PROJECT_ID` | Variable or secret | Project ID from Vercel project settings (`prj_...`) |
+   | `VERCEL_TEAM_ID` | Variable or secret | Team ID for a team-owned project (`team_...`); omit for a personal project |
+
+After tests pass on `dev`, GitHub Actions first looks for an automatic
+deployment of the current commit. If none exists, it explicitly requests a
+Render deploy for that SHA and creates a Vercel preview deployment from the
+same GitHub commit, targeting the configured project ID in the request body.
+The Vercel request skips framework auto-detection confirmation for CI and
+prints the API's error message if the request is rejected. This ensures a
+deployment is requested even when an automatic branch deploy was skipped
+because no tracked app files changed. It then polls each platform every
+15 seconds. The Render step succeeds only when the matching deploy is `live`;
+the Vercel step succeeds only when the matching preview is `READY`. A reported
+failure or a 20-minute timeout fails the corresponding job.
+
+The workflow uses Render's
+[Trigger deploy](https://api-docs.render.com/reference/create-deploy) and
+[List deploys](https://api-docs.render.com/reference/list-deploys) APIs, plus
+Vercel's [Create deployment](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment)
+and [List deployments](https://vercel.com/docs/rest-api/deployments/list-deployments)
+APIs. Existing automatic deployments are reused when found for the same
+commit, avoiding duplicate builds.
+
+### Normal pipeline runs
+
+Every push to `dev` runs backend and frontend tests, then waits for Render and
+Vercel to report successful deployments of the pushed commit. Every push to
+`main` runs the tests, creates a
+Terraform plan, and pauses before apply until an authorized reviewer approves
+it in `gcp-terraform-apply`. After applying the saved plan, the pipeline
+publishes images and deploys the application to the VM over SSH. The plan
+step requires the existing VM to have been imported first.
