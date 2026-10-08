@@ -121,7 +121,7 @@ variable "gcp_disk_type" {
 
 variable "gcp_ssh_username" {
   type    = string
-  default = "ubuntu"
+  default = "deploy"
 }
 
 variable "gcp_ssh_public_key" {
@@ -129,7 +129,18 @@ variable "gcp_ssh_public_key" {
   default = "REPLACE_WITH_SSH_PUBLIC_KEY"
 }
 
+variable "gcp_network_tags" {
+  type    = list(string)
+  default = ["http-server", "https-server", "lb-health-check"]
+}
+
+variable "gcp_manage_firewall" {
+  description = "Manage firewall rules for a newly provisioned VM; keep false for the existing VM"
+  type        = bool
+  default     = false
+}
+
 variable "gcp_startup_script" {
   type    = string
-  default = "./startup.sh"
+  default = "./modules/gcp/startup.sh"
 }

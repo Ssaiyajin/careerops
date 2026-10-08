@@ -28,15 +28,17 @@ module "azure_placeholder" {
 module "gcp" {
   source = "./modules/gcp"
 
-  enabled        = var.enable_gcp
-  project        = var.gcp_project
-  region         = var.gcp_region
-  zone           = var.gcp_zone
-  name           = var.gcp_instance_name
-  machine_type   = var.gcp_machine_type
-  disk_size_gb   = var.gcp_disk_size_gb
-  disk_type      = var.gcp_disk_type
-  ssh_username   = var.gcp_ssh_username
-  ssh_public_key = var.gcp_ssh_public_key
-  startup_script = var.gcp_startup_script
+  enabled         = var.enable_gcp
+  project         = var.gcp_project
+  region          = var.gcp_region
+  zone            = var.gcp_zone
+  name            = var.gcp_instance_name
+  machine_type    = var.gcp_machine_type
+  disk_size_gb    = var.gcp_disk_size_gb
+  disk_type       = var.gcp_disk_type
+  ssh_username    = var.gcp_ssh_username
+  ssh_public_key  = var.gcp_ssh_public_key
+  network_tags    = var.gcp_network_tags
+  manage_firewall = var.gcp_manage_firewall
+  startup_script  = var.gcp_startup_script
 }
