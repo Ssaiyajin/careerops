@@ -101,8 +101,8 @@ attempt to reconfigure it.
    | Name | Type | Value |
    | --- | --- | --- |
    | `VERCEL_TOKEN` | Secret | Vercel token with access to this project; used to create and inspect deployments |
-   | `VERCEL_PROJECT_ID` | Variable | Project ID from Vercel project settings (`prj_...`) |
-   | `VERCEL_TEAM_ID` | Variable | Team ID for a team-owned project (`team_...`); omit for a personal project |
+   | `VERCEL_PROJECT_ID` | Variable or secret | Project ID from Vercel project settings (`prj_...`) |
+   | `VERCEL_TEAM_ID` | Variable or secret | Team ID for a team-owned project (`team_...`); omit for a personal project |
 
 After tests pass on `dev`, GitHub Actions first looks for an automatic
 deployment of the current commit. If none exists, it explicitly requests a

@@ -182,13 +182,13 @@ jobs:
       - name: Trigger or wait for Vercel deployment
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID || secrets.VERCEL_TEAM_ID }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           : "${VERCEL_TOKEN:?Set the VERCEL_TOKEN Actions secret}"
-          : "${VERCEL_PROJECT_ID:?Set the VERCEL_PROJECT_ID Actions variable}"
+          : "${VERCEL_PROJECT_ID:?Set VERCEL_PROJECT_ID as an Actions variable or secret}"
 
           query=(
             --data-urlencode "projectId=$VERCEL_PROJECT_ID"
