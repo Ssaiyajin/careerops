@@ -97,12 +97,12 @@ jobs:
       - name: Wait for Render to deploy this commit
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ vars.RENDER_DEV_SERVICE_ID }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_DEV_SERVICE_ID || secrets.RENDER_DEV_SERVICE_ID }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           : "${RENDER_API_KEY:?Set the RENDER_API_KEY Actions secret}"
-          : "${RENDER_SERVICE_ID:?Set the RENDER_DEV_SERVICE_ID Actions variable}"
+          : "${RENDER_SERVICE_ID:?Set RENDER_DEV_SERVICE_ID as an Actions variable or secret}"
 
           deadline=$((SECONDS + 1200))
           while (( SECONDS < deadline )); do

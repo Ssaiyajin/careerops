@@ -92,7 +92,7 @@ attempt to reconfigure it.
    | Name | Type | Value |
    | --- | --- | --- |
    | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to read deployments |
-   | `RENDER_DEV_SERVICE_ID` | Variable | ID of the dev backend service (`srv-...`) |
+   | `RENDER_DEV_SERVICE_ID` | Variable or secret | ID of the dev backend service (`srv-...`) |
 
 7. Keep Vercel automatic Git deployment enabled for the development preview
    branch, with `BACKEND_API_URL` configured for the dev Render backend. Add
