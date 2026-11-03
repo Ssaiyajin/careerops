@@ -4,6 +4,10 @@
 
 CareerOps is a resume analysis and career-support application built with a Next.js frontend, FastAPI backend, and Google Gemini API.
 
+**Production target:** the GCP VM serves both the frontend and API; this
+repository now configures CI to deploy there, but a live deployment has not
+been verified from this workspace.
+
 # CareerOps AI Platform
 
 ## 🚀 Overview
@@ -62,24 +66,29 @@ The provider abstraction in `backend/app/services/ai_provider.py` is currently a
 
 ## 🧱 System Architecture
 
+See the [deployment architecture diagram](./docs/architecture.md) for the
+production VM, private API/database flow, optional monitoring, and gated CI
+release path.
+
 ### High-Level Flow
 
 ```mermaid
 flowchart LR
-    Browser --> Vercel["Next.js frontend (Vercel)"]
-    Vercel --> Render["FastAPI API (Render)"]
-    Render --> Database["Managed PostgreSQL"]
-    Render --> Gemini["Google Gemini API"]
-    Render --> Metrics["/metrics"]
-    Metrics --> Prometheus["Prometheus (optional local / VM)"]
+    Browser --> VM["GCP VM: Next.js frontend :80"]
+    VM --> API["FastAPI backend :8000 (private network)"]
+    API --> Database["Neon PostgreSQL"]
+    API --> Gemini["Google Gemini API"]
+    API --> Metrics["/metrics"]
+    Metrics --> Prometheus["Prometheus (opt-in)"]
     Prometheus --> Grafana["Grafana dashboard"]
 
     Repo["GitHub repository"] --> Actions["GitHub Actions"]
-    Actions --> Checks["Tests, dependency audit, Checkov, kind + k6"]
+    Actions --> Checks["Tests, secret/dependency scans, Checkov, kind + k6"]
     Checks --> Images["Backend + frontend images (GHCR)"]
     Images --> Scan["Trivy image scan"]
-    Scan --> Approval["Required GCP environment approval"]
-    Approval --> VM["Optional GCP VM deploy over SSH"]
+    Scan --> Approval["Required production environment approval"]
+    Approval --> VM
+    Actions --> Dev["Render API + Vercel preview (dev only)"]
 ```
 
 ### Tech Stack
@@ -160,7 +169,7 @@ docker compose --profile monitoring up -d prometheus grafana
 
 Open the Grafana dashboard at <http://localhost:3001> (default local login:
 `admin` / `admin`) and Prometheus at <http://localhost:9090>. Prometheus
-scrapes the local backend and the live Render backend. The provisioned
+scrapes the backend on the same Docker network. The provisioned
 **CareerOps API Overview** dashboard shows request rate, p95 latency (with a
 500 ms threshold), 5xx error rate, status codes, and in-progress requests. The
 backend exports metrics at `/metrics`. Set `GRAFANA_ADMIN_PASSWORD` and
@@ -203,12 +212,18 @@ kind cluster, checks both HTTP services, and runs the same k6 thresholds.
 For a cluster that cannot access public GHCR packages, configure an image-pull
 secret for the package credentials.
 
-The GCP VM starts the same monitoring services using
-`monitoring/docker-compose.yml`. Prometheus scrapes the GCP backend over its
-private Docker network and the live Render backend; Grafana and Prometheus bind
-to loopback on the VM. To open Grafana, use an SSH tunnel to the VM's port
-3001. The VM generates the Grafana admin password in the ignored
-`monitoring/.env` file.
+On the VM, monitoring is also opt-in: start the production app first, then run
+the following from the repository root:
+
+```sh
+docker compose --project-name careerops-monitoring \
+  --env-file monitoring/.env -f monitoring/docker-compose.yml up -d
+```
+
+Create `monitoring/.env` locally on the VM with a strong
+`GRAFANA_ADMIN_PASSWORD` before starting it. Grafana and Prometheus bind to
+loopback; access Grafana through an IAP-backed SSH tunnel. The normal
+application deployment does not start monitoring.
 
 --- 
 
@@ -222,43 +237,68 @@ Resume text and analysis results are automatically removed from the active datab
 
 Resume text is sent to Google's Gemini API for recommendations and rewriting. Generating a cover letter also sends resume text and the supplied job description to Gemini. These requests are subject to Google's current service terms and data-handling policies. The upload screen requests consent before analysis.
 
-The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; for Render/Vercel deployments, configure it in Vercel to the HTTPS URL of the matching Render backend.
+The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; the production image uses the private Compose service address, while the Dev Vercel preview uses the Dev Render backend URL.
 
 
 ---
 
 ## Deployment
 
-The always-on production deployment uses **Render for the FastAPI backend** and **Vercel for the Next.js frontend**. An optional GCP VM deployment is also supported; it can be stopped independently to control costs. Render's `RENDER_GIT_BRANCH` selects the profile when `APP_ENV` is not explicitly set (`dev` selects development and `main` selects production). Configure separate database URLs, JWT secrets, and provider keys in each Render service; never commit actual credentials. In Vercel, configure `BACKEND_API_URL` with the HTTPS Render backend URL assigned to the matching `dev` preview branch or `main` production branch. See [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for GCP setup and shutdown instructions.
+The production target is the **GCP VM**, with the Next.js frontend exposed on
+port 80 and FastAPI reachable only on the private Docker network. Render and
+Vercel remain the automated Dev backend and preview deployment. The external
+IP is ephemeral; retrieve its current value from GCP before configuring the
+`VM_HOST` Actions variable or secret. See
+[`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for setup,
+security prerequisites, operational checks, and shutdown instructions.
 
 ### Deployment decisions and pipeline
 
-The deployment path evolved from OCI to GCP and then Render: OCI was the
-initial VM-based hosting option; GCP became the optional VM target for its fit
-with the existing GCP/Terraform setup; Render is now the always-on backend
-because a managed service reduces VM and deployment maintenance. The GCP VM
-remains an optional self-managed target, and Vercel hosts the frontend.
+The hosting path evolved from OCI (initial VM exploration), to GCP (selected
+because an existing VM and Terraform setup support a self-managed deployment),
+while Render is retained for its existing managed Dev deployment. The current
+production design is GCP; Render is not the production target.
 
 Pull requests and branch pushes run backend tests, frontend lint/type-check
-and tests, dependency audits, a Checkov Terraform scan, Kubernetes manifest
-linting, and a kind deploy/smoke/load test. On `dev`, successful checks are
-followed by Render and Vercel deployment checks. On `main`, GitHub Actions
-plans Terraform, builds both images and pushes SHA-tagged images to GHCR, then
-scans them with Trivy. The `gcp-terraform-apply` Environment requires an
-authorized reviewer before Terraform apply; the VM SSH deployment is
-downstream of that approval and pulls the prebuilt images. The approval
-protects infrastructure changes and the live VM release from unattended
-deployment. The existing VM must be imported into remote Terraform state
-before the first normal `main` deployment. See
-[`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md) for the
-one-time setup and required GitHub secrets/variables.
+and tests, dependency and secret audits, a Checkov Terraform scan, Kubernetes
+manifest linting, and a kind deploy/smoke/load test. On `dev`, successful
+checks precede the Render and Vercel Dev deployments. On `main`, successful
+checks build and push both SHA-tagged images to GHCR, scan them with Trivy,
+then pause at the protected `production` Environment before SSH deployment.
+The approved deploy pulls the already-built images, checks app health, and
+does not start monitoring. Terraform import and apply are separate,
+explicitly-dispatched operations; Terraform apply has its own
+`gcp-terraform-apply` reviewer gate. The production approval protects the
+live app from unattended releases; the Terraform approval protects
+infrastructure changes.
 
-## Optional GCP deployment
+GitHub Actions holds deployment credentials, never the repository: configure
+`VM_SSH_KEY`, `VM_KNOWN_HOST`, `GHCR_READ_TOKEN`, and `GCP_WORKLOAD_IDENTITY_PROVIDER`
+and `GCP_TERRAFORM_SERVICE_ACCOUNT` as documented in the deployment guide.
+Set the current `VM_HOST`, `GCP_PROJECT_ID`, `TF_STATE_BUCKET`, and VM identity
+values as Actions variables. On the VM, copy [`.env.example`](./.env.example)
+to `/home/deploy/careerops/.env`, fill in the Neon `DATABASE_URL`,
+`JWT_SECRET_KEY`, and `GEMINI_API_KEY`, then set mode `600`. Neither `.env`
+file belongs in Git. See
+[`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for the
+one-time setup and manual GCP security checklist.
 
-An existing GCP VM can run as an optional deployment while Render remains the
-always-on backend. Follow [`infrastructure/DEPLOYMENT.md`](./infrastructure/DEPLOYMENT.md)
-to configure GitHub Actions, deploy, monitor, and stop the VM. Terraform
-examples are for provisioning a separate VM, not for changing the existing one.
+### Current state and limitations
+
+The application code, workflow, and runbook target the existing GCP VM, but
+the current live deployment, billing state, firewall rules, snapshot schedule,
+required GitHub secrets, and production approval reviewers have not been
+verified from this workspace. The VM must have a private Neon connection and
+Gemini key before deployment; app requests that need rewriting or
+recommendations depend on Google's API availability and cost. The ATS score
+is a heuristic, not a prediction of a specific ATS. The VM is resource
+constrained, and the 2 GB swap file is only an OOM safety margin. Monitoring
+and k6 load testing are opt-in and should not be treated as evidence of
+production capacity until run against the live service.
+
+For the API's interactive OpenAPI page, run the backend and open
+`http://localhost:8000/docs`; health and Prometheus metrics are available at
+`/health` and `/metrics`.
 
 
 ## Author ✨

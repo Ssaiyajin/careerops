@@ -8,13 +8,14 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Deploy the selected branch, or import the existing GCP VM once
+        description: Deploy the selected branch, import the VM, or run an approved Terraform apply
         required: true
         type: choice
         default: deploy
         options:
           - deploy
           - import-existing-vm
+          - terraform-apply
 
 permissions:
   contents: read
@@ -115,6 +116,16 @@ jobs:
           npm ci
           npm audit --omit=dev
 
+  secret-scan:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2.3.9
+
   terraform-security:
     name: Terraform security scan
     if: github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy'
@@ -125,7 +136,7 @@ jobs:
       - name: Checkov Terraform scan
         uses: bridgecrewio/checkov-action@v12
         with:
-          directory: infrastructure
+          directory: infra/terraform
           framework: terraform
           soft_fail: false
 
@@ -206,7 +217,7 @@ jobs:
   deploy-render-dev:
     name: Wait for Render dev deployment
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [backend-tests, frontend-tests, dependency-audit, k8s-kind-smoke]
+    needs: [backend-tests, frontend-tests, dependency-audit, secret-scan, k8s-kind-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -458,23 +469,22 @@ jobs:
           TF_VAR_gcp_ssh_public_key="$(ssh-keygen -y -f "$key_file")"
           export TF_VAR_gcp_ssh_public_key
 
-          terraform -chdir=infrastructure init -input=false \
+          terraform -chdir=infra/terraform init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
             -backend-config="prefix=careerops/gcp"
 
           address='module.gcp.google_compute_instance.this[0]'
-          if terraform -chdir=infrastructure state list | grep -Fxq "$address"; then
+          if terraform -chdir=infra/terraform state list | grep -Fxq "$address"; then
             echo "The VM is already in Terraform state; refusing a duplicate import." >&2
             exit 1
           fi
-          terraform -chdir=infrastructure import -input=false \
+          terraform -chdir=infra/terraform import -input=false \
             "$address" \
             "projects/careerops-503307/zones/us-central1-a/instances/careerops"
 
   terraform-plan:
     name: Terraform init and plan
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [backend-tests, frontend-tests, dependency-audit, terraform-security, k8s-kind-smoke]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.operation == 'terraform-apply'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -531,12 +541,12 @@ jobs:
           export TF_VAR_gcp_ssh_public_key
           echo "TF_VAR_gcp_ssh_public_key=$TF_VAR_gcp_ssh_public_key" >> "$GITHUB_ENV"
 
-          terraform -chdir=infrastructure init -input=false \
+          terraform -chdir=infra/terraform init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
             -backend-config="prefix=careerops/gcp"
 
           address='module.gcp.google_compute_instance.this[0]'
-          if ! terraform -chdir=infrastructure state list | grep -Fxq "$address"; then
+          if ! terraform -chdir=infra/terraform state list | grep -Fxq "$address"; then
             echo "Refusing to plan or apply: import the existing VM first." >&2
             exit 1
           fi
@@ -544,13 +554,13 @@ jobs:
       - name: Create saved plan and reject destructive changes
         run: |
           set -euo pipefail
-          terraform -chdir=infrastructure plan -input=false -out=tfplan
-          terraform -chdir=infrastructure show -json tfplan > infrastructure/plan.json
+          terraform -chdir=infra/terraform plan -input=false -out=tfplan
+          terraform -chdir=infra/terraform show -json tfplan > infra/terraform/plan.json
           python - <<'PY'
           import json
           from pathlib import Path
 
-          plan = json.loads(Path("infrastructure/plan.json").read_text())
+          plan = json.loads(Path("infra/terraform/plan.json").read_text())
           deletes = [
               change["address"]
               for change in plan["resource_changes"]
@@ -563,7 +573,7 @@ jobs:
               )
           PY
 
-          terraform -chdir=infrastructure show -no-color tfplan \
+          terraform -chdir=infra/terraform show -no-color tfplan \
             > "$RUNNER_TEMP/terraform-plan.txt"
           {
             echo '### GCP Terraform plan'
@@ -576,13 +586,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: gcp-terraform-plan
-          path: infrastructure/tfplan
+          path: infra/terraform/tfplan
           retention-days: 30
 
   terraform-apply:
     name: Terraform apply (approval required)
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [terraform-plan, scan-gcp-images]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.operation == 'terraform-apply'
+    needs: terraform-plan
     runs-on: ubuntu-latest
     environment: gcp-terraform-apply
     permissions:
@@ -610,7 +620,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: gcp-terraform-plan
-          path: infrastructure
+          path: infra/terraform
 
       - name: Apply the reviewed plan
         env:
@@ -618,21 +628,21 @@ jobs:
         run: |
           set -euo pipefail
           : "${TF_STATE_BUCKET:?Set the TF_STATE_BUCKET repository variable}"
-          terraform -chdir=infrastructure init -input=false \
+          terraform -chdir=infra/terraform init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
             -backend-config="prefix=careerops/gcp"
 
           address='module.gcp.google_compute_instance.this[0]'
-          if ! terraform -chdir=infrastructure state list | grep -Fxq "$address"; then
+          if ! terraform -chdir=infra/terraform state list | grep -Fxq "$address"; then
             echo "Refusing to apply: the VM is not imported into Terraform state." >&2
             exit 1
           fi
-          terraform -chdir=infrastructure apply -input=false -auto-approve tfplan
+          terraform -chdir=infra/terraform apply -input=false -auto-approve tfplan
 
   publish-gcp-images:
     name: Publish GCP container images
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: terraform-plan
+    needs: [backend-tests, frontend-tests, dependency-audit, secret-scan, terraform-security, k8s-kind-smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -702,63 +712,153 @@ jobs:
   deploy-gcp:
     name: Deploy to GCP VM
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [terraform-apply, scan-gcp-images]
+    needs: scan-gcp-images
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: read
-      packages: write
+      packages: read
+      id-token: write
     steps:
-      - name: Deploy over SSH
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_TERRAFORM_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Write SSH key
         env:
-          VM_EXTERNAL_IP: ${{ secrets.VM_EXTERNAL_IP || vars.VM_EXTERNAL_IP }}
           VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
-          VM_KNOWN_HOST: ${{ secrets.VM_KNOWN_HOST || vars.VM_KNOWN_HOST }}
-          VM_SSH_USER: deploy
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GHCR_USERNAME: ${{ github.actor }}
-          IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
-          : "${VM_EXTERNAL_IP:?Set the VM_EXTERNAL_IP repository secret or variable}"
           : "${VM_SSH_KEY:?Set the VM_SSH_KEY repository secret}"
-          : "${VM_KNOWN_HOST:?Set the VM_KNOWN_HOST repository secret or variable}"
-
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$VM_SSH_KEY" > "$HOME/.ssh/careerops-deploy"
           chmod 600 "$HOME/.ssh/careerops-deploy"
+
+      - name: Write verified VM host key
+        env:
+          VM_HOST: ${{ secrets.VM_HOST || vars.VM_HOST }}
+          VM_KNOWN_HOST: ${{ secrets.VM_KNOWN_HOST || vars.VM_KNOWN_HOST }}
+        run: |
+          set -euo pipefail
+          : "${VM_HOST:?Set the VM_HOST repository or production environment variable}"
+          : "${VM_KNOWN_HOST:?Set the VM_KNOWN_HOST secret or variable after verifying it out of band}"
           printf '%s\n' "$VM_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
-          ssh_options=(-i "$HOME/.ssh/careerops-deploy" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes)
-          printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" \
-            "sudo docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
+      - name: Deploy immutable images over IAP SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST || vars.VM_HOST }}
+          VM_SSH_USER: ${{ vars.VM_USER || 'deploy' }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          GHCR_USERNAME: ${{ vars.GHCR_USERNAME || github.repository_owner }}
+          IMAGE_TAG: ${{ github.sha }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCP_VM_INSTANCE: ${{ vars.GCP_VM_INSTANCE || 'careerops' }}
+          GCP_VM_ZONE: ${{ vars.GCP_VM_ZONE || 'us-central1-a' }}
+        run: |
+          set -euo pipefail
+          : "${VM_HOST:?Set VM_HOST}"
+          : "${VM_SSH_USER:?Set VM_USER or use deploy}"
+          : "${GHCR_READ_TOKEN:?Set GHCR_READ_TOKEN with read:packages access}"
+          : "${GHCR_USERNAME:?Set GHCR_USERNAME to the GitHub account that owns the token}"
+          : "${GCP_PROJECT_ID:?Set the GCP_PROJECT_ID Actions variable}"
 
-          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" "IMAGE_TAG='$IMAGE_TAG' bash -se" <<'REMOTE'
+          ssh_options=(
+            -i "$HOME/.ssh/careerops-deploy"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts"
+            -o "ProxyCommand=gcloud compute start-iap-tunnel '$GCP_VM_INSTANCE' 22 --listen-on-stdin --project='$GCP_PROJECT_ID' --zone='$GCP_VM_ZONE'"
+          )
+
+          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_HOST" "bash -se" <<'BOOTSTRAP'
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1; then
+            sudo -n apt-get update
+            sudo -n apt-get install -y docker.io
+          fi
+          sudo -n systemctl enable --now docker
+          if ! sudo -n docker compose version >/dev/null 2>&1; then
+            sudo -n apt-get update
+            sudo -n apt-get install -y docker-compose-plugin || sudo -n apt-get install -y docker-compose-v2
+          fi
+          sudo -n docker compose version
+
+          if ! sudo -n swapon --noheadings --show=NAME | grep -Fxq /swapfile; then
+            if [ ! -f /swapfile ] || [ "$(sudo -n stat -c '%s' /swapfile)" -ne 2147483648 ]; then
+              sudo -n rm -f /swapfile
+              sudo -n fallocate -l 2G /swapfile || sudo -n dd if=/dev/zero of=/swapfile bs=1M count=2048 status=progress
+              sudo -n chmod 600 /swapfile
+              sudo -n mkswap /swapfile
+            fi
+            sudo -n swapon /swapfile
+          fi
+          if ! sudo -n grep -q '^/swapfile none swap' /etc/fstab; then
+            printf '/swapfile none swap sw 0 0\n' | sudo -n tee -a /etc/fstab >/dev/null
+          fi
+          if [ "$(sudo -n stat -c '%s' /swapfile)" -ne 2147483648 ]; then
+            echo "Expected the VM swap file to be exactly 2 GiB." >&2
+            exit 1
+          fi
+          BOOTSTRAP
+
+          printf '%s' "$GHCR_READ_TOKEN" | ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_HOST" \
+            "sudo -n docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin && sudo -n chmod 600 /root/.docker/config.json"
+
+          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_HOST" "COMMIT_SHA=$IMAGE_TAG bash -se" <<'REMOTE'
           set -euo pipefail
           APP_DIR="$HOME/careerops"
           if [ ! -d "$APP_DIR/.git" ]; then
             git clone --branch main --single-branch https://github.com/Ssaiyajin/careerops.git "$APP_DIR"
+            git -C "$APP_DIR" fetch --depth 1 origin "$COMMIT_SHA"
           else
-            git -C "$APP_DIR" pull --ff-only origin main
+            git -C "$APP_DIR" fetch --depth 1 origin "$COMMIT_SHA"
           fi
+          git -C "$APP_DIR" checkout --detach "$COMMIT_SHA"
           cd "$APP_DIR"
 
-          if ! sudo grep -Eq '^DATABASE_URL=.+$' backend/.env ||
-             ! sudo grep -Eq '^JWT_SECRET_KEY=.+$' backend/.env ||
-             sudo grep -Eq '^(DATABASE_URL|JWT_SECRET_KEY)=REPLACE_ME$' backend/.env; then
-            echo "Configure DATABASE_URL and JWT_SECRET_KEY in backend/.env before deployment." >&2
+          sudo -n docker compose version
+          sudo -n swapon --noheadings --show=NAME | grep -Fxq /swapfile || {
+            echo "The 2 GiB swap file is not active." >&2
+            exit 1
+          }
+          if ! sudo -n grep -q '^/swapfile none swap' /etc/fstab; then
+            printf '/swapfile none swap sw 0 0\n' | sudo -n tee -a /etc/fstab >/dev/null
+          fi
+          if [ "$(sudo -n stat -c '%s' /swapfile)" -ne 2147483648 ]; then
+            echo "Expected the VM swap file to be exactly 2 GiB." >&2
             exit 1
           fi
 
-          if [ ! -f monitoring/.env ]; then
-            printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 32)" | sudo tee monitoring/.env >/dev/null
-            sudo chmod 600 monitoring/.env
+          if [ ! -f .env ] ||
+             ! sudo -n grep -Eq '^DATABASE_URL=postgres(ql)?://[^[:space:]]+$' .env ||
+             sudo -n grep -Eq '^DATABASE_URL=postgres(ql)?://USER:PASSWORD@HOST/DB' .env ||
+             ! sudo -n grep -Eq '^JWT_SECRET_KEY=.{32,}$' .env ||
+             sudo -n grep -Eq '^JWT_SECRET_KEY=(REPLACE|YOUR)' .env ||
+             ! sudo -n grep -Eq '^GEMINI_API_KEY=.+$' .env ||
+             sudo -n grep -Eq '^GEMINI_API_KEY=(REPLACE|YOUR)' .env; then
+            echo "Create $APP_DIR/.env with a Neon DATABASE_URL, a strong JWT_SECRET_KEY (32+ characters), and GEMINI_API_KEY." >&2
+            exit 1
           fi
+          sudo -n chmod 600 .env
 
-          sudo docker compose -f docker-compose.prod.yml pull
-          sudo docker compose -f docker-compose.prod.yml up -d
-          sudo docker compose --project-name careerops-monitoring \
-            --env-file monitoring/.env -f monitoring/docker-compose.yml pull
-          sudo docker compose --project-name careerops-monitoring \
-            --env-file monitoring/.env -f monitoring/docker-compose.yml up -d
+          sudo -n env IMAGE_TAG="$COMMIT_SHA" docker compose --env-file .env -f docker-compose.prod.yml pull
+          sudo -n env IMAGE_TAG="$COMMIT_SHA" docker compose --env-file .env -f docker-compose.prod.yml up -d --remove-orphans
+          sudo -n docker image prune -f
+          sudo -n docker compose --env-file .env -f docker-compose.prod.yml exec -T backend \
+            python -c "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health', timeout=10)"
           REMOTE
+
+      - name: Check public frontend
+        env:
+          VM_HOST: ${{ secrets.VM_HOST || vars.VM_HOST }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            --retry-delay 3 "http://$VM_HOST/"

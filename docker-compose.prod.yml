@@ -1,13 +1,11 @@
-# Optional future self-hosted deployment; not used by current production
-# (Render + Vercel). Images must be published separately; this repository's
-# GitHub Actions workflow only runs checks. Postgres is external, so
-# DATABASE_URL must point at a managed instance.
+# Production deployment on the GCP VM. CI publishes these images to GHCR;
+# the VM only pulls immutable commit tags and never builds application images.
 services:
   backend:
-    image: ghcr.io/ssaiyajin/careerops-backend:${IMAGE_TAG:-latest}
+    image: ghcr.io/ssaiyajin/careerops-backend:${IMAGE_TAG:?Set IMAGE_TAG to the release commit SHA}
     container_name: careerops-backend
     env_file:
-      - ./backend/.env
+      - ./.env
     expose:
       - "8000"
     volumes:
@@ -20,7 +18,7 @@ services:
     memswap_limit: 300m
 
   frontend:
-    image: ghcr.io/ssaiyajin/careerops-frontend:${IMAGE_TAG:-latest}
+    image: ghcr.io/ssaiyajin/careerops-frontend:${IMAGE_TAG:?Set IMAGE_TAG to the release commit SHA}
     container_name: careerops-frontend
     environment:
       BACKEND_API_URL: http://backend:8000

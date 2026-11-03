@@ -47,7 +47,7 @@ variable "disk_type" {
 variable "ssh_username" {
   type        = string
   description = "Username the SSH key metadata is registered under (must match the pipeline's deploy step)"
-  default     = "ubuntu"
+  default     = "deploy"
 }
 
 variable "ssh_public_key" {

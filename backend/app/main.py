@@ -1,4 +1,4 @@
-"""Production currently runs on both Render and the GCP VM."""
+"""FastAPI application used by the GCP VM production deployment."""
 
 import asyncio
 import logging

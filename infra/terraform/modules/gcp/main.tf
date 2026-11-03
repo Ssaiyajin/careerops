@@ -3,10 +3,10 @@
 // default VPC with explicit firewall rules for SSH + the app ports.
 // Mirrors the shape of the (now-removed) OCI E2.1.Micro setup.
 
-resource "google_compute_firewall" "ssh" {
+resource "google_compute_firewall" "ssh_iap" {
   count = var.enabled && var.manage_firewall ? 1 : 0
 
-  name    = "careerops-allow-ssh"
+  name    = "careerops-allow-ssh-iap"
   network = "default"
   project = var.project
 
@@ -15,8 +15,8 @@ resource "google_compute_firewall" "ssh" {
     ports    = ["22"]
   }
 
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["careerops"]
+  source_ranges = ["35.235.240.0/20"]
+  target_tags   = var.network_tags
 }
 
 resource "google_compute_firewall" "app" {
@@ -28,11 +28,11 @@ resource "google_compute_firewall" "app" {
 
   allow {
     protocol = "tcp"
-    ports    = ["3000"]
+    ports    = ["80"]
   }
 
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["careerops"]
+  target_tags   = var.network_tags
 }
 
 resource "google_compute_instance" "this" {
@@ -89,7 +89,7 @@ resource "google_compute_instance" "this" {
   metadata_startup_script = file(var.startup_script)
 
   depends_on = [
-    google_compute_firewall.ssh,
+    google_compute_firewall.ssh_iap,
     google_compute_firewall.app,
   ]
 }
