@@ -1,4 +1,6 @@
-// Root module: instantiate cloud modules
+// AWS and Azure remain opt-in examples; both enable flags default to false.
+// GCP is the selected production provider, but Terraform changes are separate
+// from application releases and must be explicitly enabled and approved.
 
 module "aws_placeholder" {
   source = "./modules/aws"

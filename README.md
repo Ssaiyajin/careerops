@@ -5,8 +5,8 @@
 CareerOps is a resume analysis and career-support application built with a Next.js frontend, FastAPI backend, and Google Gemini API.
 
 **Production target:** the GCP VM serves both the frontend and API; this
-repository now configures CI to deploy there, but a live deployment has not
-been verified from this workspace.
+repository configures CI to deploy there. The VM is the production runtime
+target; the current live deployment has not been verified from this workspace.
 
 # CareerOps AI Platform
 
@@ -25,19 +25,20 @@ It is built as a **real-world engineering system**, not a tutorial project, comb
 
 ---
 
-## 🎯 Vision
+## 🎯 Project scope
 
-To build a production-grade AI platform that demonstrates:
-
-- End-to-end system design
-- Scalable cloud architecture
-- Self-hosted LLM infrastructure
-- Modern DevOps practices
-- Real AI/ML pipelines
+CareerOps currently combines resume-processing workflows, a Next.js
+application, a FastAPI service, and Gemini-backed writing assistance. Its
+deployment automation targets a GCP VM. Self-hosted language models and
+provider-independent inference are not implemented.
 
 ### First-release focus
 
-The first release prioritizes secure resume analysis against the user's actual job description, reliable results and per-account history, and clear privacy controls. The broader AI career assistant remains future scope.
+The first release focuses on resume analysis against a supplied job
+description, per-account history, and privacy controls. Interview preparation
+and personalized learning plans remain future scope. See
+[current state and limitations](#current-state-and-limitations) for important
+constraints.
 
 ---
 
@@ -72,7 +73,6 @@ release path.
 
 ### High-Level Flow
 
-Copy-Item .env.example .env
 ```mermaid
 flowchart LR
     Browser --> VM["GCP VM: Next.js frontend :80"]
@@ -80,8 +80,12 @@ flowchart LR
     API --> Database["Neon PostgreSQL"]
     API --> Gemini["Google Gemini API"]
     API --> Metrics["/metrics"]
-    Metrics --> Prometheus["Prometheus (opt-in)"]
+    Metrics -->|IAP SSH tunnel| Prometheus["Local Prometheus (opt-in)"]
     Prometheus --> Grafana["Grafana dashboard"]
+    subgraph Laptop["Developer laptop"]
+        Prometheus
+        Grafana
+    end
 
     Repo["GitHub repository"] --> Actions["GitHub Actions"]
     Actions --> Checks["Tests, secret/dependency scans, Checkov, kind + k6"]
@@ -168,8 +172,9 @@ docker compose up --build -d
 ```
 
 Prometheus and Grafana are opt-in so they do not consume laptop resources when
-you are not inspecting metrics. The backend metrics port on the production VM
-is loopback-only. For the live dashboard, authenticate `gcloud` for IAP and
+you are not inspecting metrics; their UI ports bind to laptop loopback only.
+The backend metrics port on the production VM is loopback-only. For the live
+dashboard, authenticate `gcloud` for IAP and
 keep this SSH tunnel open:
 
 ```powershell
@@ -195,8 +200,10 @@ for `careerops-production` with state `UP`, and open Grafana at
 `GRAFANA_ADMIN_PASSWORD`). The provisioned
 **CareerOps API Overview** dashboard shows request rate, p95 latency (with a
 500 ms threshold), 5xx error rate, status codes, and in-progress requests. The
-backend exports metrics at `/metrics`. The VM monitoring stack uses its own
-private-network target and remains stopped unless explicitly started.
+backend exports metrics at `/metrics`. This is the documented monitoring
+workflow: Prometheus and Grafana run locally. A separate VM-side Compose
+configuration exists as an optional alternative, but the normal deployment
+does not start it and its live operation has not been verified.
 
 Capture screenshots and a two-minute recording once the live panels have data,
 then stop monitoring with `docker compose --profile monitoring down` and close
@@ -289,6 +296,12 @@ IP is ephemeral; retrieve its current value from GCP before configuring the
 [`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for setup,
 security prerequisites, operational checks, and shutdown instructions.
 
+Prometheus and Grafana run locally on the developer laptop when needed. Local
+Prometheus scrapes production metrics through an IAP SSH tunnel; the normal VM
+deployment does not start either service. Kubernetes manifests are validated
+in CI by schema linting and a temporary kind deployment with health and load
+smoke tests. Kubernetes is a CI validation target, not the production runtime.
+
 ### Deployment decisions and pipeline
 
 The hosting path evolved from OCI (initial VM exploration), to GCP (selected
@@ -325,13 +338,25 @@ one-time setup and manual GCP security checklist.
 The application code, workflow, and runbook target the existing GCP VM, but
 the current live deployment, billing state, firewall rules, snapshot schedule,
 required GitHub secrets, and production approval reviewers have not been
-verified from this workspace. The VM must have a private Neon connection and
+verified from this workspace. Monitoring is an opt-in local laptop stack; its
+live connection to the VM has not been verified. Kubernetes deployment is
+validated against kind in CI and is not evidence of a production cluster
+deployment. The VM must have a private Neon connection and
 Gemini key before deployment; app requests that need rewriting or
 recommendations depend on Google's API availability and cost. The ATS score
 is a heuristic, not a prediction of a specific ATS. The VM is resource
 constrained, and the 2 GB swap file is only an OOM safety margin. Monitoring
 and k6 load testing are opt-in and should not be treated as evidence of
 production capacity until run against the live service.
+
+### Documentation and delivery status
+
+**Documentation status: complete for the current checked-in configuration.**
+See the [`docs/` index](./docs/README.md) for development, architecture, and
+operations guides covering the configured GCP target, local opt-in monitoring,
+and Kubernetes CI validation. This does not claim that a live deployment,
+production monitoring session, or production Kubernetes cluster has been
+verified.
 
 For the API's interactive OpenAPI page, run the backend and open
 `http://localhost:8000/docs`; health and Prometheus metrics are available at
