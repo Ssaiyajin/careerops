@@ -1,3 +1,5 @@
+"""Production currently runs on both Render and the GCP VM."""
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
