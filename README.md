@@ -310,11 +310,12 @@ while Render is retained for its existing managed Dev deployment. The current
 production design is GCP; Render is not the production target.
 
 Pull requests and branch pushes run backend tests, frontend lint/type-check
-and tests, dependency and secret audits, a Checkov Terraform scan, Kubernetes
-manifest linting, and a kind deploy/smoke/load test. On `dev`, successful
-checks precede the Render and Vercel Dev deployments. On `main`, successful
-checks build and push both SHA-tagged images to GHCR, scan them with Trivy,
-then pause at the protected `production` Environment before SSH deployment.
+and tests, dependency and secret audits, a Trivy filesystem scan, a Checkov
+Terraform scan, Kubernetes manifest linting, and a kind deploy/smoke/load test.
+On `dev`, successful checks precede the Render and Vercel Dev deployments. On
+`main`, successful checks build and push both SHA-tagged images to GHCR, scan
+them with Trivy, then pause at the protected `production` Environment before
+SSH deployment.
 The approved deploy pulls the already-built images, checks app health, and
 does not start monitoring. Terraform import and apply are separate,
 explicitly-dispatched operations; Terraform apply has its own
