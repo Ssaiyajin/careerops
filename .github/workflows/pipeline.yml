@@ -87,10 +87,126 @@ jobs:
               npm test -- --runInBand
             '
 
+  dependency-audit:
+    name: Dependency audit
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Audit Python dependencies
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r backend/requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Audit production npm dependencies
+        working-directory: frontend
+        run: |
+          npm ci
+          npm audit --omit=dev
+
+  terraform-security:
+    name: Terraform security scan
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkov Terraform scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infrastructure
+          framework: terraform
+          soft_fail: false
+
+  k8s-manifests-lint:
+    name: Lint Kubernetes manifests
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manifest schemas and Kustomize build
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE/k8s:/work:ro" \
+            ghcr.io/yannh/kubeconform:v0.6.7 \
+            -strict -summary \
+            /work/namespace.yaml /work/backend.yaml /work/frontend.yaml
+          kubectl kustomize k8s > "$RUNNER_TEMP/careerops-k8s.yaml"
+
+  k8s-kind-smoke:
+    name: Deploy to kind and smoke/load test
+    if: github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy'
+    needs: [backend-tests, frontend-tests, k8s-manifests-lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: helm/kind-action@v1.12.0
+        with:
+          cluster_name: careerops
+
+      - name: Build and load application images
+        run: |
+          set -euo pipefail
+          docker build --tag ghcr.io/ssaiyajin/careerops-backend:latest ./backend
+          docker build --tag ghcr.io/ssaiyajin/careerops-frontend:latest ./frontend
+          kind load docker-image \
+            ghcr.io/ssaiyajin/careerops-backend:latest \
+            ghcr.io/ssaiyajin/careerops-frontend:latest \
+            --name careerops
+
+      - name: Deploy manifests and create test configuration
+        run: |
+          set -euo pipefail
+          kubectl apply -f k8s/namespace.yaml
+          kubectl -n careerops create secret generic careerops-backend \
+            --from-literal=DATABASE_URL=sqlite:////tmp/careerops.db \
+            --from-literal=JWT_SECRET_KEY=kind-smoke-test-secret \
+            --from-literal=GEMINI_API_KEY=kind-smoke-test-key \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -k k8s/
+
+      - name: Wait for workloads, smoke-test both services, and load-test backend
+        run: |
+          set -euo pipefail
+          kubectl -n careerops rollout status deployment/careerops-backend --timeout=300s
+          kubectl -n careerops rollout status deployment/careerops-frontend --timeout=300s
+
+          kubectl -n careerops port-forward service/careerops-backend 18000:8000 \
+            > "$RUNNER_TEMP/backend-port-forward.log" 2>&1 &
+          backend_forward_pid=$!
+          kubectl -n careerops port-forward service/careerops-frontend 13000:3000 \
+            > "$RUNNER_TEMP/frontend-port-forward.log" 2>&1 &
+          frontend_forward_pid=$!
+          trap 'kill "$backend_forward_pid" "$frontend_forward_pid" 2>/dev/null || true' EXIT
+
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            --retry-delay 2 http://127.0.0.1:18000/health
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            --retry-delay 2 http://127.0.0.1:13000/ > /dev/null
+          docker run --rm --network host \
+            --volume "$GITHUB_WORKSPACE/tests/load:/scripts:ro" \
+            --env BASE_URL=http://127.0.0.1:18000 \
+            grafana/k6:0.56.0 run /scripts/health.js
+
   deploy-render-dev:
     name: Wait for Render dev deployment
     if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, dependency-audit, k8s-kind-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -358,7 +474,7 @@ jobs:
   terraform-plan:
     name: Terraform init and plan
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: [backend-tests, frontend-tests]
+    needs: [backend-tests, frontend-tests, dependency-audit, terraform-security, k8s-kind-smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -466,7 +582,7 @@ jobs:
   terraform-apply:
     name: Terraform apply (approval required)
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: terraform-plan
+    needs: [terraform-plan, scan-gcp-images]
     runs-on: ubuntu-latest
     environment: gcp-terraform-apply
     permissions:
@@ -516,7 +632,7 @@ jobs:
   publish-gcp-images:
     name: Publish GCP container images
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: terraform-apply
+    needs: terraform-plan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -548,10 +664,45 @@ jobs:
             ghcr.io/ssaiyajin/careerops-frontend:latest
             ghcr.io/ssaiyajin/careerops-frontend:${{ github.sha }}
 
+  scan-gcp-images:
+    name: Scan published container images
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    needs: publish-gcp-images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trivy scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/ssaiyajin/careerops-backend:${{ github.sha }}
+          format: table
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      - name: Trivy scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ghcr.io/ssaiyajin/careerops-frontend:${{ github.sha }}
+          format: table
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
   deploy-gcp:
     name: Deploy to GCP VM
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: publish-gcp-images
+    needs: [terraform-apply, scan-gcp-images]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -565,6 +716,7 @@ jobs:
           VM_SSH_USER: deploy
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USERNAME: ${{ github.actor }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           set -euo pipefail
           : "${VM_EXTERNAL_IP:?Set the VM_EXTERNAL_IP repository secret or variable}"
@@ -581,7 +733,7 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" \
             "sudo docker login ghcr.io --username '$GHCR_USERNAME' --password-stdin"
 
-          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" 'bash -se' <<'REMOTE'
+          ssh "${ssh_options[@]}" "$VM_SSH_USER@$VM_EXTERNAL_IP" "IMAGE_TAG='$IMAGE_TAG' bash -se" <<'REMOTE'
           set -euo pipefail
           APP_DIR="$HOME/careerops"
           if [ ! -d "$APP_DIR/.git" ]; then

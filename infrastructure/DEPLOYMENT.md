@@ -24,14 +24,19 @@ pricing, so check Billing before running the instance.
    the managed PostgreSQL URL and a unique `JWT_SECRET_KEY`. Do not commit
    these secrets. On first deployment, the workflow clones the repository but
    stops with an error if app settings are missing or placeholders.
-3. A successful push to `main` runs backend/frontend checks, initializes and
-   plans Terraform, and waits for approval in the `gcp-terraform-apply`
-   environment before applying the saved plan. Only after approval does it
-   publish images and SSH to the VM to deploy the app and monitoring. The
-   frontend is published on port 80, matching the VM's `http-server` network
-   tag. The GCP backend's `/metrics` endpoint is reachable by Prometheus only
-   over the private Docker network; Prometheus also scrapes the Render backend
-   over HTTPS.
+3. Before enabling deploys, verify that the VM has Docker and the Docker
+   Compose plugin installed and that a 2 GB `/swapfile` is active. The GCP
+   startup script installs Docker and provisions that swap on newly created
+   VMs; it is not automatically re-run on the imported existing VM. The
+   deployment workflow builds both images on GitHub Actions, pushes immutable
+   SHA-tagged images to GHCR, and runs Trivy before it waits for approval in
+   the `gcp-terraform-apply` environment. Only after a reviewer approves does
+   it apply the saved Terraform plan and SSH to the VM, where Compose pulls
+   the prebuilt images and starts the app and monitoring. The VM does not
+   build the images. The frontend is published on port 80, matching the VM's
+   `http-server` network tag. The GCP backend's `/metrics` endpoint is
+   reachable by Prometheus only over the private Docker network; Prometheus
+   also scrapes the Render backend over HTTPS.
 4. Grafana and Prometheus bind to loopback on the VM. Access Grafana through
    `ssh -L 3001:127.0.0.1:3001 deploy@35.222.133.240`.
 
@@ -49,11 +54,13 @@ the VM as a public production endpoint.
 ## Terraform plan, approval, and deployment
 
 The single `.github/workflows/pipeline.yml` workflow has branch-specific
-deployment paths. On `dev`, tests are followed by Render and Vercel deploys.
-On `main`, tests are followed by Terraform init and plan, a required
-`gcp-terraform-apply` environment approval, Terraform apply, image publishing,
-and SSH deployment to the VM. Pull requests run tests only. The Terraform
-import operation is available as a one-time manual operation on `main`.
+deployment paths. Pull requests run tests, dependency and infrastructure
+scans, and kind validation. On `dev`, successful checks are followed by
+Render and Vercel deploys. On `main`, the workflow plans Terraform, publishes
+both SHA-tagged GHCR images, and scans them before the required
+`gcp-terraform-apply` environment approval. Terraform apply and SSH deployment
+are downstream of that reviewer gate. The Terraform import operation is
+available as a one-time manual operation on `main`.
 
 The plan refuses to continue until the existing VM is present in remote state.
 The instance resource has `prevent_destroy`, and the plan job rejects
@@ -134,8 +141,8 @@ commit, avoiding duplicate builds.
 
 Every push to `dev` runs backend and frontend tests, then waits for Render and
 Vercel to report successful deployments of the pushed commit. Every push to
-`main` runs the tests, creates a
-Terraform plan, and pauses before apply until an authorized reviewer approves
-it in `gcp-terraform-apply`. After applying the saved plan, the pipeline
-publishes images and deploys the application to the VM over SSH. The plan
-step requires the existing VM to have been imported first.
+`main` runs tests and scans, creates a Terraform plan, builds and pushes both
+SHA-tagged images, and scans them before pausing for an authorized reviewer in
+`gcp-terraform-apply`. Once approved, the pipeline applies the saved plan and
+deploys the already-published images to the VM over SSH. The plan step
+requires the existing VM to have been imported first.

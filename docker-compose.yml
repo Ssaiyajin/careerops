@@ -46,6 +46,7 @@ services:
     restart: unless-stopped
 
   prometheus:
+    profiles: ["monitoring"]
     image: prom/prometheus:v3.5.0
     ports:
       - "9090:9090"
@@ -57,6 +58,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    profiles: ["monitoring"]
     image: grafana/grafana:12.1.1
     ports:
       - "3001:3000"

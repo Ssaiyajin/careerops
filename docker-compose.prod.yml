@@ -4,7 +4,7 @@
 # DATABASE_URL must point at a managed instance.
 services:
   backend:
-    image: ghcr.io/ssaiyajin/careerops-backend:latest
+    image: ghcr.io/ssaiyajin/careerops-backend:${IMAGE_TAG:-latest}
     container_name: careerops-backend
     env_file:
       - ./backend/.env
@@ -20,7 +20,7 @@ services:
     memswap_limit: 300m
 
   frontend:
-    image: ghcr.io/ssaiyajin/careerops-frontend:latest
+    image: ghcr.io/ssaiyajin/careerops-frontend:${IMAGE_TAG:-latest}
     container_name: careerops-frontend
     environment:
       BACKEND_API_URL: http://backend:8000

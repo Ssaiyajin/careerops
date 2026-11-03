@@ -49,6 +49,7 @@ services:
     restart: unless-stopped
 
   prometheus:
+    profiles: ["monitoring"]
     image: prom/prometheus:v3.5.0
     container_name: careerops-prometheus
     ports:
@@ -61,6 +62,7 @@ services:
     restart: unless-stopped
 
   grafana:
+    profiles: ["monitoring"]
     image: grafana/grafana:12.1.1
     container_name: careerops-grafana
     ports:
