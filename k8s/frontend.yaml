@@ -21,9 +21,9 @@ spec:
             - name: http
               containerPort: 3000
               protocol: TCP
-          env:
-            - name: BACKEND_API_URL
-              value: http://careerops-backend:8000
+          envFrom:
+            - configMapRef:
+                name: careerops-config
           startupProbe:
             httpGet:
               path: /

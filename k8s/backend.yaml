@@ -21,9 +21,10 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: careerops-config
           env:
-            - name: APP_ENV
-              value: main
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

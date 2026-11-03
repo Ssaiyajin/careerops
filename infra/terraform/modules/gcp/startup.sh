@@ -4,6 +4,9 @@ set -e
 apt-get update -y
 apt-get install -y docker.io git
 systemctl enable --now docker
+if id deploy >/dev/null 2>&1; then
+  usermod -aG docker deploy
+fi
 if ! docker compose version >/dev/null 2>&1; then
   apt-get install -y docker-compose-plugin || apt-get install -y docker-compose-v2
 fi

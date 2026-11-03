@@ -72,6 +72,7 @@ release path.
 
 ### High-Level Flow
 
+Copy-Item .env.example .env
 ```mermaid
 flowchart LR
     Browser --> VM["GCP VM: Next.js frontend :80"]
@@ -154,6 +155,12 @@ npm run dev
 
 ## How to run it
 
+Copy `.env.example` to `.env` and set unique values for `JWT_SECRET_KEY` and
+`GRAFANA_ADMIN_PASSWORD` (and `GEMINI_API_KEY` if you want AI generation).
+The example contains placeholders only; never commit your populated `.env`.
+In PowerShell, use `Copy-Item .env.example .env`; in macOS/Linux, use
+`cp .env.example .env`.
+
 From the repository root, start the frontend, backend, and local PostgreSQL:
 
 ```sh
@@ -161,20 +168,40 @@ docker compose up --build -d
 ```
 
 Prometheus and Grafana are opt-in so they do not consume laptop resources when
-you are not inspecting metrics. Start them when needed:
+you are not inspecting metrics. The backend metrics port on the production VM
+is loopback-only. For the live dashboard, authenticate `gcloud` for IAP and
+keep this SSH tunnel open:
+
+```powershell
+gcloud compute ssh deploy@careerops `
+  --project=careerops-503307 --zone=us-central1-a --tunnel-through-iap `
+  -- -N -L 0.0.0.0:18000:127.0.0.1:8000
+```
+
+The tunnel listener binds all host interfaces so Docker Desktop containers can
+reach it. Keep inbound TCP/18000 blocked by the laptop firewall and stop the
+tunnel when monitoring is done.
+
+In another terminal, run:
 
 ```sh
 docker compose --profile monitoring up -d prometheus grafana
 ```
 
-Open the Grafana dashboard at <http://localhost:3001> (default local login:
-`admin` / `admin`) and Prometheus at <http://localhost:9090>. Prometheus
-scrapes the backend on the same Docker network. The provisioned
+The workstation Prometheus config scrapes the production `/metrics` endpoint
+through the SSH tunnel. Open <http://localhost:9090>, check **Status > Targets**
+for `careerops-production` with state `UP`, and open Grafana at
+<http://localhost:3001> (login `admin` and the configured
+`GRAFANA_ADMIN_PASSWORD`). The provisioned
 **CareerOps API Overview** dashboard shows request rate, p95 latency (with a
 500 ms threshold), 5xx error rate, status codes, and in-progress requests. The
-backend exports metrics at `/metrics`. Set `GRAFANA_ADMIN_PASSWORD` and
-`JWT_SECRET_KEY` before starting the stack if you want non-default local
-credentials; Compose defaults are for local development only.
+backend exports metrics at `/metrics`. The VM monitoring stack uses its own
+private-network target and remains stopped unless explicitly started.
+
+Capture screenshots and a two-minute recording once the live panels have data,
+then stop monitoring with `docker compose --profile monitoring down` and close
+the tunnel. Screenshots and recordings are not checked in because the live
+monitoring session has not yet been run.
 
 With k6 installed, run the two-minute load test against the local API after
 the app is up:
@@ -196,7 +223,9 @@ docker compose --profile monitoring down
 
 The manifests in [`k8s/`](./k8s/) deploy the backend and frontend with HTTP
 startup, readiness, and liveness probes plus CPU and memory requests/limits.
-Create the backend Secret out of band (never commit credentials), then apply:
+Set the backend Secret out of band (never commit credentials). The
+`k8s/secret.example.yaml` file is a placeholder template and is deliberately
+excluded from Kustomize; replace its values locally or use:
 
 ```sh
 kubectl apply -f k8s/namespace.yaml
@@ -207,8 +236,11 @@ kubectl -n careerops create secret generic careerops-backend \
 kubectl apply -k k8s/
 ```
 
-The CI workflow schema-lints these manifests, builds both images, deploys to a
-kind cluster, checks both HTTP services, and runs the same k6 thresholds.
+The ConfigMap is applied with Kustomize; no frontend Secret is needed because
+the frontend consumes no credentials. The CI workflow schema-lints the
+manifests, builds and loads both images, deploys to a kind cluster, waits for
+rollouts, runs an in-cluster backend health check, checks both HTTP services,
+and runs the same k6 thresholds.
 For a cluster that cannot access public GHCR packages, configure an image-pull
 secret for the package credentials.
 
@@ -217,13 +249,18 @@ the following from the repository root:
 
 ```sh
 docker compose --project-name careerops-monitoring \
-  --env-file monitoring/.env -f monitoring/docker-compose.yml up -d
+  --env-file .env -f monitoring/docker-compose.yml up -d
 ```
 
-Create `monitoring/.env` locally on the VM with a strong
-`GRAFANA_ADMIN_PASSWORD` before starting it. Grafana and Prometheus bind to
+Set a strong `GRAFANA_ADMIN_PASSWORD` in the root `.env` on the VM before
+starting monitoring. Grafana and Prometheus bind to
 loopback; access Grafana through an IAP-backed SSH tunnel. The normal
 application deployment does not start monitoring.
+
+The laptop uses the WSL2 resource limits in `%UserProfile%\.wslconfig`
+(`memory=5GB`, `processors=2`). Restart WSL with `wsl --shutdown` after changing
+that file. Docker Desktop must be installed and running for the compose
+commands above.
 
 --- 
 

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: careerops-config
+  namespace: careerops
+data:
+  APP_ENV: main
+  BACKEND_API_URL: http://careerops-backend:8000

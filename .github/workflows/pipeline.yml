@@ -154,7 +154,7 @@ jobs:
             --volume "$GITHUB_WORKSPACE/k8s:/work:ro" \
             ghcr.io/yannh/kubeconform:v0.6.7 \
             -strict -summary \
-            /work/namespace.yaml /work/backend.yaml /work/frontend.yaml
+            /work/namespace.yaml /work/config.yaml /work/backend.yaml /work/frontend.yaml /work/secret.example.yaml
           kubectl kustomize k8s > "$RUNNER_TEMP/careerops-k8s.yaml"
 
   k8s-kind-smoke:
@@ -209,6 +209,13 @@ jobs:
             --retry-delay 2 http://127.0.0.1:18000/health
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
             --retry-delay 2 http://127.0.0.1:13000/ > /dev/null
+          kubectl -n careerops run careerops-backend-smoke \
+            --image=curlimages/curl:8.12.1 \
+            --restart=Never \
+            --rm -i \
+            --command -- \
+            curl --fail --silent --show-error \
+            http://careerops-backend:8000/health
           docker run --rm --network host \
             --volume "$GITHUB_WORKSPACE/tests/load:/scripts:ro" \
             --env BASE_URL=http://127.0.0.1:18000 \
@@ -784,6 +791,7 @@ jobs:
             sudo -n apt-get install -y docker.io
           fi
           sudo -n systemctl enable --now docker
+          sudo -n usermod -aG docker "$(id -un)"
           if ! sudo -n docker compose version >/dev/null 2>&1; then
             sudo -n apt-get update
             sudo -n apt-get install -y docker-compose-plugin || sudo -n apt-get install -y docker-compose-v2
@@ -837,7 +845,7 @@ jobs:
           fi
 
           if [ ! -f .env ] ||
-             ! sudo -n grep -Eq '^DATABASE_URL=postgres(ql)?://[^[:space:]]+$' .env ||
+             ! sudo -n grep -Eq '^DATABASE_URL=postgres(ql)?://[^[:space:]]+[?&]sslmode=require$' .env ||
              sudo -n grep -Eq '^DATABASE_URL=postgres(ql)?://USER:PASSWORD@HOST/DB' .env ||
              ! sudo -n grep -Eq '^JWT_SECRET_KEY=.{32,}$' .env ||
              sudo -n grep -Eq '^JWT_SECRET_KEY=(REPLACE|YOUR)' .env ||
