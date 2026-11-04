@@ -194,21 +194,25 @@ docker compose --profile monitoring up -d prometheus grafana
 ```
 
 The workstation Prometheus config scrapes the production `/metrics` endpoint
-through the SSH tunnel. Open <http://localhost:9090>, check **Status > Targets**
-for `careerops-production` with state `UP`, and open Grafana at
-<http://localhost:3001> (login `admin` and the configured
-`GRAFANA_ADMIN_PASSWORD`). The provisioned
-**CareerOps API Overview** dashboard shows request rate, p95 latency (with a
-500 ms threshold), 5xx error rate, status codes, and in-progress requests. The
-backend exports metrics at `/metrics`. This is the documented monitoring
-workflow: Prometheus and Grafana run locally. A separate VM-side Compose
-configuration exists as an optional alternative, but the normal deployment
-does not start it and its live operation has not been verified.
+through the SSH tunnel. After starting the monitoring profile, open
+[Prometheus](http://localhost:9090) and check
+[its targets](http://localhost:9090/targets) for `careerops-production` with
+state `UP`. Open the provisioned
+[CareerOps API Overview dashboard](http://localhost:3001/d/careerops-overview/careerops-api-overview)
+in Grafana at <http://localhost:3001> (login `admin`; the password is the
+`GRAFANA_ADMIN_PASSWORD` value in the root `.env`). Without the SSH tunnel, the
+production target will be `DOWN` and the dashboard will not show production
+metrics. The dashboard shows request rate, p95 latency (with a 500 ms
+threshold), 5xx error rate, status codes, and in-progress requests. The backend
+exports metrics at `/metrics`. This is the documented monitoring workflow:
+Prometheus and Grafana run locally. A separate VM-side Compose configuration
+exists as an optional alternative, but the normal deployment does not start it
+and its live operation has not been verified.
 
-Capture screenshots and a two-minute recording once the live panels have data,
-then stop monitoring with `docker compose --profile monitoring down` and close
-the tunnel. Screenshots and recordings are not checked in because the live
-monitoring session has not yet been run.
+Capture screenshots and a two-minute recording once the target is `UP` and the
+live panels have data, then stop monitoring with
+`docker compose --profile monitoring down` and close the tunnel. Screenshots
+and recordings are not checked in.
 
 With k6 installed, run the two-minute load test against the local API after
 the app is up:
