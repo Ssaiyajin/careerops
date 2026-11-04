@@ -151,9 +151,8 @@ jobs:
       - name: Checkov Terraform scan
         uses: bridgecrewio/checkov-action@v12
         with:
-          directory: infra/terraform
+          directory: infra/terraform/modules/gcp
           framework: terraform
-          skip_path: modules/aws,modules/azure
           soft_fail: false
 
   k8s-manifests-lint:

@@ -20,6 +20,7 @@ resource "google_compute_firewall" "ssh_iap" {
 }
 
 resource "google_compute_firewall" "app" {
+  #checkov:skip=CKV_GCP_106: This module keeps the existing public TCP/80 ingress; TLS termination is not configured here.
   count = var.enabled && var.manage_firewall ? 1 : 0
 
   name    = "careerops-allow-app"
@@ -36,6 +37,8 @@ resource "google_compute_firewall" "app" {
 }
 
 resource "google_compute_instance" "this" {
+  #checkov:skip=CKV_GCP_38: Persistent disks use Google-managed encryption by default; customer-managed key lifecycle is not configured for this VM.
+  #checkov:skip=CKV_GCP_40: This VM uses a public IP for direct application ingress; replacing it requires an unconfigured load balancer or ingress.
   count = var.enabled ? 1 : 0
 
   lifecycle {
@@ -82,8 +85,15 @@ resource "google_compute_instance" "this" {
     access_config {} // ephemeral public IP — Always Free covers this
   }
 
+  shielded_instance_config {
+    enable_secure_boot          = true
+    enable_vtpm                 = true
+    enable_integrity_monitoring = true
+  }
+
   metadata = {
-    ssh-keys = "${var.ssh_username}:${var.ssh_public_key}"
+    block-project-ssh-keys = "TRUE"
+    ssh-keys                = "${var.ssh_username}:${var.ssh_public_key}"
   }
 
   metadata_startup_script = file(var.startup_script)

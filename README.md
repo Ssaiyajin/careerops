@@ -75,17 +75,27 @@ release path.
 
 ```mermaid
 flowchart LR
-    Browser --> VM["GCP VM: Next.js frontend :80"]
-    VM --> API["FastAPI backend :8000 (private network)"]
+    Browser --> Frontend["Next.js frontend<br/>GCP VM :80"]
+    Frontend -->|"private Docker network"| API["FastAPI backend<br/>GCP VM :8000"]
     API --> Database["Neon PostgreSQL"]
     API --> Gemini["Google Gemini API"]
-    API --> Metrics["/metrics"]
-    Metrics -->|IAP SSH tunnel| Prometheus["Local Prometheus (opt-in)"]
-    Prometheus --> Grafana["Grafana dashboard"]
-    subgraph Laptop["Developer laptop"]
-        Prometheus
-        Grafana
+    API --> Metrics["Prometheus /metrics"]
+
+    subgraph Monitoring["Implemented, opt-in Docker Compose monitoring"]
+        Prometheus["Prometheus<br/>15s scrape interval"]
+        Grafana["Grafana<br/>provisioned Prometheus datasource"]
+        CAdvisor["cAdvisor<br/>container metrics"]
+        NodeExporter["node-exporter<br/>Docker host metrics"]
+        ApiDashboard["CareerOps API Overview"]
+        InfraDashboard["CareerOps Infrastructure"]
+        CAdvisor --> Prometheus
+        NodeExporter --> Prometheus
+        Prometheus --> Grafana
+        Grafana --> ApiDashboard
+        Grafana --> InfraDashboard
     end
+    Metrics -->|"IAP SSH tunnel (production)"| Prometheus
+    API -. "local Compose target" .-> Prometheus
 
     Repo["GitHub repository"] --> Actions["GitHub Actions"]
     Actions --> Checks["Tests, secret/dependency scans, Checkov, kind + k6"]
@@ -206,6 +216,37 @@ Open [Grafana](http://localhost:3001) (login `admin`; password is the
 - [CareerOps Infrastructure](http://localhost:3001/d/careerops-infrastructure/careerops-infrastructure)
   covers Docker container CPU, memory, network and out-of-memory events, plus
   host CPU, memory, disk, network, and exporter health.
+
+### Implemented monitoring and dashboard graphs
+
+Prometheus and Grafana are implemented as opt-in Docker Compose services, not
+just planned architecture. Prometheus scrapes configured targets every 15
+seconds and retains its local time-series data in a Docker volume. Grafana is
+provisioned with the Prometheus datasource and both dashboards from the
+repository, so the dashboards appear automatically when the monitoring stack
+starts. The dashboards contain these graphs and health panels:
+
+| Dashboard | Graphs and panels |
+| --- | --- |
+| [CareerOps API Overview](http://localhost:3001/d/careerops-overview/careerops-api-overview) | **HTTP requests per second** (`http_requests_total`); **HTTP request latency p50, p95, and p99** (`http_request_duration_seconds_bucket`); **HTTP 5xx error rate** and **requests by status code** (`http_requests_total` labels); **requests in progress** (`http_requests_inprogress`); **requests by route and method** (`http_requests_total` labels); **Prometheus API scrape health** (`up`). |
+| [CareerOps Infrastructure](http://localhost:3001/d/careerops-infrastructure/careerops-infrastructure) | **Docker host CPU, memory, filesystem, disk throughput, and network throughput** (`node_cpu_seconds_total`, `node_memory_*`, `node_filesystem_*`, `node_disk_*`, `node_network_*`); **container CPU, working-set memory, memory-limit utilization, and network throughput** (`container_cpu_*`, `container_memory_*`, `container_spec_memory_limit_bytes`, `container_network_*`); **container out-of-memory events** (`container_oom_events_total`); **CPU throttling** (`container_cpu_cfs_*`); **monitoring target health** (`up`). |
+
+The local Prometheus configuration has five jobs: `careerops-production`
+(backend `/metrics` over the IAP tunnel), `careerops-local` (backend
+`/metrics` on the Compose network), `cadvisor` (container metrics),
+`node-exporter` (Docker host metrics), and `prometheus` (Prometheus itself).
+The infrastructure dashboard uses cAdvisor and node-exporter metrics; the API
+dashboard uses the backend's FastAPI instrumentation. Prometheus's Targets page
+shows each job's live scrape status. A configured job can be `DOWN` when its
+application, exporter, or required tunnel is not running; this does not mean
+the Grafana dashboards or Prometheus integration are unimplemented.
+
+The production VM also has an optional Compose monitoring configuration. It
+scrapes the backend over the VM's private Compose network; it is separate from
+the laptop configuration and is not started by the normal application
+deployment. See the [architecture and monitoring flow](./docs/architecture.md)
+and [operations guide](./docs/operations.md) for deployment boundaries and
+security notes.
 
 The local backend job stays `DOWN` until the application stack is started with
 `docker compose up --build -d`. The production job stays `DOWN` until the SSH
