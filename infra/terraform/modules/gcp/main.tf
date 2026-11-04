@@ -1,4 +1,4 @@
-// GCP Always Free tier target: a single e2-micro instance in a free
+// GCP Free Tier eligible target: a single e2-micro instance in a free
 // region (us-west1 / us-central1 / us-east1), 30GB pd-standard disk,
 // default VPC with explicit firewall rules for SSH + the app ports.
 // Mirrors the shape of the (now-removed) OCI E2.1.Micro setup.
@@ -52,6 +52,11 @@ resource "google_compute_instance" "this" {
       error_message = "Set gcp_ssh_public_key to a real SSH public key before enabling GCP."
     }
 
+    precondition {
+      condition     = startswith(var.zone, "${var.region}-")
+      error_message = "gcp_zone must be a zone within the selected Free Tier region."
+    }
+
     prevent_destroy = true
 
     ignore_changes = [
@@ -82,7 +87,7 @@ resource "google_compute_instance" "this" {
 
   network_interface {
     network = "default"
-    access_config {} // ephemeral public IP — Always Free covers this
+    access_config {} // ephemeral public IP
   }
 
   shielded_instance_config {

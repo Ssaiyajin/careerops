@@ -50,6 +50,24 @@ Before deploying, use the GCP Console or authenticated `gcloud` to:
 
 These are manual checks; they have not been performed from this workspace.
 
+## Free Tier configuration guardrails
+
+The GCP Terraform module rejects configurations outside the Compute Engine
+Free Tier's eligible VM shape: `e2-micro` in `us-west1`, `us-central1`, or
+`us-east1`, with a `pd-standard` boot disk no larger than 30 GB. It also checks
+that the selected zone belongs to the selected region. A Terraform plan with
+ineligible values fails before it can be applied.
+
+These are configuration checks, not a usage meter or a spend cap. Google's
+Compute Engine allowance is shared across the billing account: eligible
+`e2-micro` hours are free only up to the number of hours in the month, and
+disk and outbound-transfer limits are pooled too. This module cannot see usage
+from other projects or resources, enforce the account-wide 90% threshold, or
+stop the VM based on billing data. Check Billing reports and the linked
+[Free Tier limits](https://docs.cloud.google.com/free/docs/free-cloud-features#free-tier-usage-limits)
+for actual usage and charges; other resources such as snapshots and networking
+can also incur charges.
+
 ## VM application configuration
 
 Create `/home/deploy/careerops/.env` on the VM from the tracked root
