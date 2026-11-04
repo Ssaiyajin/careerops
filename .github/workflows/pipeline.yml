@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Deploy the selected branch, import the VM, or run an approved Terraform apply
+        description: Deploy the selected branch or run a separate GCP Terraform operation
         required: true
         type: choice
         default: deploy
@@ -236,22 +236,24 @@ jobs:
             --env BASE_URL=http://127.0.0.1:18000 \
             grafana/k6:0.56.0 run /scripts/health.js
 
-  deploy-render-dev:
-    name: Wait for Render dev deployment
-    if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+  deploy-render:
+    name: Deploy backend to Render
+    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: [backend-tests, frontend-tests, dependency-audit, secret-scan, k8s-kind-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
     steps:
       - name: Trigger or wait for Render deployment
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-          RENDER_SERVICE_ID: ${{ vars.RENDER_DEV_SERVICE_ID || secrets.RENDER_DEV_SERVICE_ID }}
+          RENDER_SERVICE_ID: ${{ github.ref == 'refs/heads/main' && (vars.RENDER_PROD_SERVICE_ID || secrets.RENDER_PROD_SERVICE_ID) || (github.ref == 'refs/heads/dev' && (vars.RENDER_DEV_SERVICE_ID || secrets.RENDER_DEV_SERVICE_ID)) }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           : "${RENDER_API_KEY:?Set the RENDER_API_KEY Actions secret}"
-          : "${RENDER_SERVICE_ID:?Set RENDER_DEV_SERVICE_ID as an Actions variable or secret}"
+          : "${RENDER_SERVICE_ID:?Set RENDER_PROD_SERVICE_ID and RENDER_DEV_SERVICE_ID as Actions variables or secrets}"
 
           deploys="$(curl --fail --silent --show-error \
             --header "Authorization: Bearer $RENDER_API_KEY" \
@@ -321,10 +323,10 @@ jobs:
           echo "Timed out after 20 minutes waiting for Render deployment of $COMMIT_SHA." >&2
           exit 1
 
-  deploy-vercel-dev:
-    name: Wait for Vercel dev deployment
-    if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
-    needs: deploy-render-dev
+  deploy-vercel:
+    name: Deploy frontend to Vercel
+    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    needs: deploy-render
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -333,6 +335,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID || secrets.VERCEL_TEAM_ID }}
+          VERCEL_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+          DEPLOY_BRANCH: ${{ github.ref == 'refs/heads/main' && 'main' || 'dev' }}
           COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
@@ -341,8 +345,8 @@ jobs:
 
           query=(
             --data-urlencode "projectId=$VERCEL_PROJECT_ID"
-            --data-urlencode "target=preview"
-            --data-urlencode "branch=dev"
+            --data-urlencode "target=$VERCEL_TARGET"
+            --data-urlencode "branch=$DEPLOY_BRANCH"
             --data-urlencode "sha=$COMMIT_SHA"
             --data-urlencode "limit=20"
           )
@@ -362,15 +366,16 @@ jobs:
               echo "Found an existing Vercel deployment for $COMMIT_SHA ($existing_state); will wait for it."
               ;;
             ERROR|CANCELED|BLOCKED|"")
-              echo "Triggering Vercel preview deployment for $COMMIT_SHA."
+              echo "Triggering Vercel $VERCEL_TARGET deployment for $COMMIT_SHA."
               body="$(jq -nc \
                 --arg name careerops \
                 --arg project "$VERCEL_PROJECT_ID" \
                 --arg org Ssaiyajin \
                 --arg repo careerops \
-                --arg ref dev \
+                --arg ref "$DEPLOY_BRANCH" \
+                --arg target "$VERCEL_TARGET" \
                 --arg sha "$COMMIT_SHA" \
-                '{name: $name, project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}}')"
+                '{name: $name, project: $project, target: $target, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}}')"
               create_url="https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1"
               if [[ -n "${VERCEL_TEAM_ID:-}" ]]; then
                 create_url+="&teamId=$VERCEL_TEAM_ID"
@@ -408,7 +413,7 @@ jobs:
             case "$state" in
               READY)
                 url="$(jq -r '.deployments[0].url // empty' <<< "$deployments")"
-                echo "Vercel preview for $COMMIT_SHA is ready: ${url:-URL not provided}"
+                echo "Vercel $VERCEL_TARGET deployment for $COMMIT_SHA is ready: ${url:-URL not provided}"
                 exit 0
                 ;;
               ERROR|CANCELED|BLOCKED)
@@ -420,7 +425,7 @@ jobs:
                 echo "Vercel deployment is $state; checking again in 15 seconds."
                 ;;
               "")
-                echo "No Vercel preview found yet for $COMMIT_SHA; checking again in 15 seconds."
+                echo "No Vercel $VERCEL_TARGET deployment found yet for $COMMIT_SHA; checking again in 15 seconds."
                 ;;
               *)
                 echo "Unexpected Vercel deployment state for $COMMIT_SHA: $state" >&2
@@ -662,8 +667,8 @@ jobs:
           terraform -chdir=infra/terraform apply -input=false -auto-approve tfplan
 
   publish-gcp-images:
-    name: Publish GCP container images
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    name: Publish GCP container images (paused)
+    if: ${{ false }}
     needs: [backend-tests, frontend-tests, dependency-audit, secret-scan, terraform-security, k8s-kind-smoke]
     runs-on: ubuntu-latest
     permissions:
@@ -697,8 +702,8 @@ jobs:
             ghcr.io/ssaiyajin/careerops-frontend:${{ github.sha }}
 
   scan-gcp-images:
-    name: Scan published container images
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    name: Scan published container images (paused)
+    if: ${{ false }}
     needs: publish-gcp-images
     runs-on: ubuntu-latest
     permissions:
@@ -732,8 +737,8 @@ jobs:
           exit-code: "1"
 
   deploy-gcp:
-    name: Deploy to GCP VM
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    name: Deploy to GCP VM (paused)
+    if: ${{ false }}
     needs: scan-gcp-images
     runs-on: ubuntu-latest
     environment: production

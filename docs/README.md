@@ -6,14 +6,14 @@ does not assert that external services or production deployments are live.
 
 ## Start here
 
-- [Architecture and flowcharts](architecture.md) — earlier Render/Vercel
-  design compared with the current GCP architecture and gated CI release.
+- [Architecture and flowcharts](architecture.md) — current Render/Vercel
+  deployment architecture and gated CI release.
 - [Operations guide](operations.md) — local monitoring, Kubernetes CI
   validation, release gates, and operational limits.
 - [Development guide](development.md) — local setup and test commands.
-- [GCP VM deployment runbook](../infra/terraform/DEPLOYMENT.md) — VM
-  prerequisites, GitHub settings, and deployment procedure.
+- [Deployment guide and legacy GCP runbook](../infra/terraform/DEPLOYMENT.md) —
+  Render/Vercel setup, paused GCP status, and Terraform guardrails.
 
 The older V1/V2 diagrams and planning documents in this folder are historical
-artifacts. The linked architecture and runbooks are the maintained description
-of the current repository configuration.
+artifacts. The linked architecture and runbooks describe the current
+repository configuration.

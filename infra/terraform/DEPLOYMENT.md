@@ -1,25 +1,29 @@
-# GCP VM production deployment
+# Deployment guide and legacy GCP VM runbook
 
 ## Hosting decision and status
 
-Production targets the existing GCP VM: its public HTTP endpoint serves the
-Next.js frontend, and the FastAPI backend is private on the Compose network.
-Render and Vercel are retained for the `dev` backend and preview. This
-workspace cannot verify the VM's current billing, external address, firewall,
-snapshot schedule, or live app state.
+GCP application deployment is paused. The `main` branch now targets Render
+for the API and Vercel for the frontend; `dev` targets their development and
+preview services. The GCP Terraform import/apply operations remain separate
+manual workflow operations and require an active billing account to access
+their GCS remote state. Do not run them while billing is disabled.
 
-## Existing VM and deployment flow
+Pausing CI does not stop or delete any existing GCP VM, disk, snapshot, or
+other resource. Their current state and charges have not been verified from
+this workspace. Inspect the Cloud Console and stop/delete resources separately
+if you do not want them running or accruing charges.
+
+Render and Vercel plans and usage can also incur charges; confirm their pricing
+and limits before enabling the deployments.
+
+## Legacy VM deployment details (historical)
 
 The instance is `careerops` in `us-central1-a`; the deploy account is
 `deploy`. The external address is ephemeral and must be obtained from GCP each
-time it changes. Do not copy an old IP from documentation. CI builds and tests
-the app, publishes immutable SHA-tagged backend and frontend images to GHCR,
-scans them with Trivy, then waits for approval in the GitHub `production`
-Environment. After approval, it uses IAP to SSH with strict host-key checking,
-checks `/home/deploy/careerops/.env`, installs Docker/Compose and a persistent
-2 GiB swap file if missing, pulls the prebuilt images, restarts the app, prunes
-unused images, and checks backend and public frontend health. It never builds
-images or starts Prometheus/Grafana on the VM.
+time it changes. Do not copy an old IP from documentation. The former CI
+deployment built images, published them to GHCR, and used IAP SSH to update
+the VM. Those application deployment jobs are now paused and must not be used
+while GCP billing is disabled.
 
 The backend has a `/metrics` endpoint. Port 8000 is bound to the VM's loopback
 interface only, not the public network. The VM's optional Prometheus stack
@@ -29,9 +33,10 @@ Prometheus target is `host.docker.internal:18000` over that encrypted tunnel.
 The frontend listens on port 80 over HTTP; configure HTTPS termination before
 sending sensitive production traffic.
 
-## Required GCP safety checks
+## Legacy GCP safety checks
 
-Before deploying, use the GCP Console or authenticated `gcloud` to:
+Before operating or shutting down the legacy VM, use the GCP Console or
+authenticated `gcloud` to:
 
 1. Inspect **Billing > Reports** and confirm actual charges, including VM,
    disk, snapshots, IP, network egress, and any managed database. Stop/delete
@@ -122,24 +127,26 @@ For private GHCR packages, the VM stores the `GHCR_READ_TOKEN` credentials in
 root's Docker config so Docker Compose can pull on later releases. Revoke and
 replace that token if the VM is retired or compromised.
 
-## Terraform plan, approval, and deployment
+## Paused GCP Terraform operations
 
-The single `.github/workflows/pipeline.yml` workflow has branch-specific
-deployment paths. Pull requests run tests, dependency and secret scans,
-infrastructure scans, and kind validation. On `dev`, successful checks are
-followed by Render and Vercel Dev deploys. On `main`, successful checks build
-and push both SHA-tagged GHCR images and scan them with Trivy. App deployment
-then waits for the required reviewer in the `production` Environment. Routine
-releases do not plan or apply Terraform.
+The workflow's GCP image publishing and VM deployment jobs are disabled.
+Application releases do not build/push GCP images or connect to the VM.
+Separate manual import and Terraform apply operations remain in the workflow
+for possible future use, but cannot access the remote state while the GCP
+project's billing account is closed. Do not enable billing solely to run these
+operations unless you have decided to accept any charges.
 
-Terraform import and apply are independent manual workflow operations on
-`main`. Apply first creates a saved plan, refuses deletions/replacements, then
-waits in `gcp-terraform-apply`. It refuses to continue until the VM has been
-imported into remote state. The instance resource has `prevent_destroy` and
-ignores existing machine type, image, network, tags, SSH metadata, and startup
-script so importing the current VM does not silently reconfigure it.
+If GCP Terraform is deliberately resumed later, the prior setup and approval
+instructions below describe the required state bucket, credentials, and
+review gate. The VM resource has `prevent_destroy`; review any future plan
+carefully and do not delete or recreate the state bucket, which may contain
+Terraform state.
 
-### One-time setup
+### Legacy GCP setup reference
+
+Steps 1-5 are legacy GCP setup and are not needed for Render/Vercel application
+deployments. Do not execute them while you want GCP billing to remain disabled.
+Creating or using GCP resources can incur charges.
 
 1. Choose a globally unique GCS bucket name and run
    `bash infra/terraform/bootstrap-gcp-state.sh` in a shell with `gcloud`
@@ -165,26 +172,36 @@ script so importing the current VM does not silently reconfigure it.
    `gcp-terraform-apply`. Add required reviewers to both; keep production
    secrets scoped to `production` where possible.
 5. Before removing public SSH ingress, verify IAP firewall access and that
-   the deploy account's SSH key works through IAP. Then use **Actions >
-   CareerOps Pipeline > Run workflow** on `main` and choose
-   `import-existing-vm` only if you intend to manage this VM with Terraform.
-   This imports
-   `projects/careerops-503307/zones/us-central1-a/instances/careerops` into
-   GCS state. Do not run import again after it succeeds. Terraform changes
-   are then invoked by selecting `terraform-apply`; normal image releases do
-   not require Terraform state.
+   the deploy account's SSH key works through IAP. The manual
+   `import-existing-vm` and `terraform-apply` workflow options are for future
+   use only; do not run them while billing is disabled.
 
-6. Keep Render automatic deploy-on-push enabled for the development backend
-   service connected to the `dev` branch. In GitHub repository **Settings >
-   Secrets and variables > Actions**, add:
+### Render and Vercel deployment setup
+
+The following steps configure application deployments on managed providers;
+they do not require GCP billing. Render and Vercel plans and usage can still
+incur charges, so check provider pricing first.
+
+1. Configure separate Render backend services connected to `dev` and `main`.
+   Set each service to the appropriate branch, use the backend Dockerfile
+   (`backend/Dockerfile`), set `APP_ENV=dev` on the dev service and
+   `APP_ENV=main` on the production service, and configure `DATABASE_URL`,
+   `JWT_SECRET_KEY`, and `GEMINI_API_KEY` in each Render service environment.
+   Set the health check path to `/health` if configuring one. The GitHub workflow explicitly
+   triggers the matching commit. In GitHub repository **Settings > Secrets and
+   variables > Actions**,
+   add:
 
    | Name | Type | Value |
    | --- | --- | --- |
-   | `RENDER_API_KEY` | Secret | API key created in Render account settings; used to trigger and inspect deployments |
-   | `RENDER_DEV_SERVICE_ID` | Variable or secret | ID of the dev backend service (`srv-...`) |
+   | `RENDER_API_KEY` | Secret | API key created in Render account settings; available to both `production` and `development` deployment jobs |
+   | `RENDER_DEV_SERVICE_ID` | Variable or secret | ID of the Render backend connected to `dev` (`srv-...`); repository or `development` environment |
+   | `RENDER_PROD_SERVICE_ID` | Variable or secret | ID of the Render backend connected to `main` (`srv-...`); repository or `production` environment |
 
-7. Keep Vercel automatic Git deployment enabled for the development preview
-   branch, with `BACKEND_API_URL` configured for the dev Render backend. Add
+2. Configure the Vercel project to deploy `main` to Production and `dev` as
+   Preview. Set `BACKEND_API_URL` in the Vercel Production environment to the
+   Render `main` backend URL, and in Preview to the Render `dev` backend URL.
+   The Next.js server-side API route uses this value to proxy requests. Add
    these to the same GitHub Actions settings:
 
    | Name | Type | Value |
@@ -193,17 +210,26 @@ script so importing the current VM does not silently reconfigure it.
    | `VERCEL_PROJECT_ID` | Variable or secret | Project ID from Vercel project settings (`prj_...`) |
    | `VERCEL_TEAM_ID` | Variable or secret | Team ID for a team-owned project (`team_...`); omit for a personal project |
 
-After tests pass on `dev`, GitHub Actions first looks for an automatic
-deployment of the current commit. If none exists, it explicitly requests a
-Render deploy for that SHA and creates a Vercel preview deployment from the
-same GitHub commit, targeting the configured project ID in the request body.
-The Vercel request skips framework auto-detection confirmation for CI and
-prints the API's error message if the request is rejected. This ensures a
-deployment is requested even when an automatic branch deploy was skipped
-because no tracked app files changed. It then polls each platform every
-15 seconds. The Render step succeeds only when the matching deploy is `live`;
-the Vercel step succeeds only when the matching preview is `READY`. A reported
-failure or a 20-minute timeout fails the corresponding job.
+Create a GitHub Actions Environment named `development` without required
+reviewers for the Dev Render deployment job. Put `RENDER_API_KEY` in both the
+`development` and `production` environments if it is not configured as a
+repository secret. Keep required reviewers on the `production` Environment;
+approval there gates both production deployments. Configure the Vercel
+credentials as repository-level secrets/variables because the Vercel job
+runs after the Render approval without a second environment gate.
+
+After checks pass on `dev`, GitHub Actions deploys the current commit to the
+Render development backend and Vercel Preview. On `main`, it waits for
+approval in the protected `production` Environment, then deploys to the
+Render production backend and Vercel Production. For each platform it reuses
+an existing deployment for the same commit when possible; otherwise, it
+explicitly triggers/creates the deployment. It polls every 15 seconds and
+fails if the matching Render deploy is not `live`, the matching Vercel deploy
+is not `READY`, or either operation times out after 20 minutes.
+
+The API credential and app settings are held by Render; do not put production
+values in the repository. Confirm your Render plan and usage limits before
+deploying because plans and usage can incur charges.
 
 The workflow uses Render's
 [Trigger deploy](https://api-docs.render.com/reference/create-deploy) and

@@ -4,9 +4,24 @@
 
 CareerOps is a resume analysis and career-support application built with a Next.js frontend, FastAPI backend, and Google Gemini API.
 
-**Production target:** the GCP VM serves both the frontend and API; this
-repository configures CI to deploy there. The VM is the production runtime
-target; the current live deployment has not been verified from this workspace.
+**Deployment target:** `main` deploys the frontend to Vercel and the API to
+Render; `dev` deploys to their preview/development services. GCP VM deployment
+is paused because the linked billing account is closed. Render and Vercel
+plans and usage may still incur charges; confirm their pricing before use.
+
+## CareerOps in action
+
+![Animated illustrative walkthrough of the CareerOps home page, sign-in screen, and scrolling analysis results](./docs/assets/careerops-walkthrough.svg)
+
+*Illustrative UI preview of the home page, login, and results flow; it is not a
+recording of a live user session.*
+
+### Grafana dashboard
+
+![User-provided Grafana infrastructure dashboard screenshot](./docs/assets/careerops-grafana-infrastructure.png)
+
+*User-provided Grafana dashboard screenshot. Dashboard data depends on the
+monitoring stack and its configured data sources being available.*
 
 # CareerOps AI Platform
 
@@ -29,7 +44,7 @@ It is built as a **real-world engineering system**, not a tutorial project, comb
 
 CareerOps currently combines resume-processing workflows, a Next.js
 application, a FastAPI service, and Gemini-backed writing assistance. Its
-deployment automation targets a GCP VM. Self-hosted language models and
+deployment automation targets Render and Vercel. Self-hosted language models and
 provider-independent inference are not implemented.
 
 ### First-release focus
@@ -68,15 +83,17 @@ The provider abstraction in `backend/app/services/ai_provider.py` is currently a
 ## 🧱 System Architecture
 
 See the [deployment architecture diagram](./docs/architecture.md) for the
-production VM, private API/database flow, optional monitoring, and gated CI
-release path.
+Vercel frontend, Render API/database flow, optional monitoring, and CI release
+path.
+
+![CareerOps dev and production deployment diagram](./docs/assets/careerops-deployment.svg)
 
 ### High-Level Flow
 
 ```mermaid
 flowchart LR
-    Browser --> Frontend["Next.js frontend<br/>GCP VM :80"]
-    Frontend -->|"private Docker network"| API["FastAPI backend<br/>GCP VM :8000"]
+    Browser --> Frontend["Next.js frontend<br/>Vercel"]
+    Frontend -->|"server-side HTTPS API proxy"| API["FastAPI backend<br/>Render"]
     API --> Database["Neon PostgreSQL"]
     API --> Gemini["Google Gemini API"]
     API --> Metrics["Prometheus /metrics"]
@@ -94,16 +111,14 @@ flowchart LR
         Grafana --> ApiDashboard
         Grafana --> InfraDashboard
     end
-    Metrics -->|"IAP SSH tunnel (production)"| Prometheus
+    Metrics -. "IAP SSH tunnel (optional legacy GCP VM)" .-> Prometheus
     API -. "local Compose target" .-> Prometheus
 
     Repo["GitHub repository"] --> Actions["GitHub Actions"]
     Actions --> Checks["Tests, secret/dependency scans, Checkov, kind + k6"]
-    Checks --> Images["Backend + frontend images (GHCR)"]
-    Images --> Scan["Trivy image scan"]
-    Scan --> Approval["Required production environment approval"]
-    Approval --> VM
-    Actions --> Dev["Render API + Vercel preview (dev only)"]
+    Checks --> Approval["Protected production environment"]
+    Approval --> Production["Render API + Vercel production"]
+    Actions --> Dev["Render API + Vercel preview"]
 ```
 
 ### Tech Stack
@@ -183,9 +198,8 @@ docker compose up --build -d
 
 Prometheus and Grafana are opt-in so they do not consume laptop resources when
 you are not inspecting metrics; their UI ports bind to laptop loopback only.
-The backend metrics port on the production VM is loopback-only. For the live
-dashboard, authenticate `gcloud` for IAP and
-keep this SSH tunnel open:
+The metrics endpoint on the legacy GCP VM is loopback-only. If that VM is
+still running, authenticate `gcloud` for IAP and keep this SSH tunnel open:
 
 ```powershell
 gcloud compute ssh deploy@careerops `
@@ -203,7 +217,7 @@ In another terminal, run:
 docker compose --profile monitoring up -d prometheus grafana cadvisor node-exporter
 ```
 
-The workstation Prometheus config scrapes production `/metrics` through the
+The workstation Prometheus config can scrape legacy VM `/metrics` through the
 SSH tunnel, the local backend when the app stack is running, cAdvisor container
 metrics, and node-exporter host metrics. Check
 [Prometheus targets](http://localhost:9090/targets) for all four scrape jobs.
@@ -232,7 +246,7 @@ starts. The dashboards contain these graphs and health panels:
 | [CareerOps Infrastructure](http://localhost:3001/d/careerops-infrastructure/careerops-infrastructure) | **Docker host CPU, memory, filesystem, disk throughput, and network throughput** (`node_cpu_seconds_total`, `node_memory_*`, `node_filesystem_*`, `node_disk_*`, `node_network_*`); **container CPU, working-set memory, memory-limit utilization, and network throughput** (`container_cpu_*`, `container_memory_*`, `container_spec_memory_limit_bytes`, `container_network_*`); **container out-of-memory events** (`container_oom_events_total`); **CPU throttling** (`container_cpu_cfs_*`); **monitoring target health** (`up`). |
 
 The local Prometheus configuration has five jobs: `careerops-production`
-(backend `/metrics` over the IAP tunnel), `careerops-local` (backend
+(legacy backend `/metrics` over the IAP tunnel), `careerops-local` (backend
 `/metrics` on the Compose network), `cadvisor` (container metrics),
 `node-exporter` (Docker host metrics), and `prometheus` (Prometheus itself).
 The infrastructure dashboard uses cAdvisor and node-exporter metrics; the API
@@ -241,17 +255,18 @@ shows each job's live scrape status. A configured job can be `DOWN` when its
 application, exporter, or required tunnel is not running; this does not mean
 the Grafana dashboards or Prometheus integration are unimplemented.
 
-The production VM also has an optional Compose monitoring configuration. It
+The legacy VM also has an optional Compose monitoring configuration. It
 scrapes the backend over the VM's private Compose network; it is separate from
-the laptop configuration and is not started by the normal application
-deployment. See the [architecture and monitoring flow](./docs/architecture.md)
+the laptop configuration and is not started by Render/Vercel deployments.
+See the [architecture and monitoring flow](./docs/architecture.md)
 and [operations guide](./docs/operations.md) for deployment boundaries and
 security notes.
 
 The local backend job stays `DOWN` until the application stack is started with
-`docker compose up --build -d`. The production job stays `DOWN` until the SSH
-tunnel above is open. On Docker Desktop for Windows, node-exporter reports the
-Linux VM used by Docker, not native Windows host metrics. cAdvisor needs access
+`docker compose up --build -d`. The legacy VM job stays `DOWN` until the SSH
+tunnel above is open and the VM is available. On Docker Desktop for Windows,
+node-exporter reports the Linux VM used by Docker, not native Windows host
+metrics. cAdvisor needs access
 to the Docker socket and read-only host filesystem mounts to inspect containers;
 keep this local monitoring stack on a trusted machine. The monitoring web ports
 bind only to `127.0.0.1`. A separate VM-side Compose configuration exists as
@@ -340,65 +355,64 @@ The browser uses a same-origin Next.js backend-for-frontend. It stores the beare
 
 ## Deployment
 
-The production target is the **GCP VM**, with the Next.js frontend exposed on
-port 80 and FastAPI reachable only on the private Docker network. Render and
-Vercel remain the automated Dev backend and preview deployment. The external
-IP is ephemeral; retrieve its current value from GCP before configuring the
-`VM_HOST` Actions variable or secret. See
-[`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for setup,
-security prerequisites, operational checks, and shutdown instructions.
+The `main` branch deploys the Next.js frontend to Vercel and the FastAPI
+backend to a separate Render production service. The `dev` branch targets the
+Render development service and Vercel preview. The frontend proxies API
+requests server-side; configure Vercel's `BACKEND_API_URL` to the matching
+Render service URL in both Production and Preview environments.
 
-Prometheus and Grafana run locally on the developer laptop when needed. Local
-Prometheus scrapes production metrics through an IAP SSH tunnel; the normal VM
-deployment does not start either service. Kubernetes manifests are validated
-in CI by schema linting and a temporary kind deployment with health and load
-smoke tests. Kubernetes is a CI validation target, not the production runtime.
+GCP VM image publishing and application deployment are paused in CI. The
+separate Terraform import/apply operations are not used for application
+releases and require an active GCP billing account. Pausing CI does not stop or
+delete any existing GCP resources; inspect the Cloud Console and stop/delete
+them separately if you don't want them running or accruing charges.
+
+Render and Vercel may charge or have availability limits depending on their
+plans and usage. Check provider pricing before use. The Render backend also
+requires `DATABASE_URL`, `JWT_SECRET_KEY`, and `GEMINI_API_KEY`. See
+[`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for the
+legacy GCP runbook and Terraform guardrails.
+
+Prometheus and Grafana run locally on the developer laptop when needed.
+Kubernetes manifests are validated in CI by schema linting and a temporary
+kind deployment with health and load smoke tests. Kubernetes is a CI
+validation target, not the production runtime.
 
 ### Deployment decisions and pipeline
 
-The hosting path evolved from OCI (initial VM exploration), to GCP (selected
-because an existing VM and Terraform setup support a self-managed deployment),
-while Render is retained for its existing managed Dev deployment. The current
-production design is GCP; Render is not the production target.
+GCP was the previous production target. Its application deployment is paused
+because the linked billing account is closed. Render and Vercel are now the
+production and development deployment targets.
 
 Pull requests and branch pushes run backend tests, frontend lint/type-check
 and tests, dependency and secret audits, a Trivy filesystem scan, a Checkov
 Terraform scan, Kubernetes manifest linting, and a kind deploy/smoke/load test.
-On `dev`, successful checks precede the Render and Vercel Dev deployments. On
-`main`, successful checks build and push both SHA-tagged images to GHCR, scan
-them with Trivy, then pause at the protected `production` Environment before
-SSH deployment.
-The approved deploy pulls the already-built images, checks app health, and
-does not start monitoring. Terraform import and apply are separate,
-explicitly-dispatched operations; Terraform apply has its own
-`gcp-terraform-apply` reviewer gate. The production approval protects the
-live app from unattended releases; the Terraform approval protects
-infrastructure changes.
+On `dev`, successful checks deploy to Render and Vercel preview. On `main`,
+successful checks deploy the backend to Render and the frontend to Vercel
+production, after approval in the protected `production` Environment. No GCP
+images are built or deployed by these release jobs. Terraform import and
+apply remain separate, explicitly-dispatched infrastructure operations; they
+are not required for application deployment and cannot run while GCP billing
+is disabled.
 
-GitHub Actions holds deployment credentials, never the repository: configure
-`VM_SSH_KEY`, `VM_KNOWN_HOST`, `GHCR_READ_TOKEN`, and `GCP_WORKLOAD_IDENTITY_PROVIDER`
-and `GCP_TERRAFORM_SERVICE_ACCOUNT` as documented in the deployment guide.
-Set the current `VM_HOST`, `GCP_PROJECT_ID`, `TF_STATE_BUCKET`, and VM identity
-values as Actions variables. On the VM, copy [`.env.example`](./.env.example)
-to `/home/deploy/careerops/.env`, fill in the Neon `DATABASE_URL`,
-`JWT_SECRET_KEY`, and `GEMINI_API_KEY`, then set mode `600`. Neither `.env`
-file belongs in Git. See
-[`infra/terraform/DEPLOYMENT.md`](./infra/terraform/DEPLOYMENT.md) for the
-one-time setup and manual GCP security checklist.
+Configure `RENDER_API_KEY`, `RENDER_DEV_SERVICE_ID`, `RENDER_PROD_SERVICE_ID`,
+`VERCEL_TOKEN`, and `VERCEL_PROJECT_ID` in GitHub Actions settings. Configure
+Vercel `BACKEND_API_URL` separately for Production and Preview, pointing to
+their matching Render services. Store app credentials in the Render service
+environment, never in the repository. See the runbook for details.
 
 ### Current state and limitations
 
-The application code, workflow, and runbook target the existing GCP VM, but
-the current live deployment, billing state, firewall rules, snapshot schedule,
-required GitHub secrets, and production approval reviewers have not been
-verified from this workspace. Monitoring is an opt-in local laptop stack; its
-live connection to the VM has not been verified. Kubernetes deployment is
-validated against kind in CI and is not evidence of a production cluster
-deployment. The VM must have a private Neon connection and
-Gemini key before deployment; app requests that need rewriting or
-recommendations depend on Google's API availability and cost. The ATS score
-is a heuristic, not a prediction of a specific ATS. The VM is resource
-constrained, and the 2 GB swap file is only an OOM safety margin. Monitoring
+The Render/Vercel workflow is configured, but provider credentials, service
+settings, plan limits, and live deployment state have not been verified from
+this workspace. GCP image publishing and VM deployment are paused; pausing CI
+does not stop existing cloud resources. Monitoring is an opt-in local laptop
+stack. Kubernetes deployment is validated against kind in CI and is not
+evidence of a production cluster deployment. The legacy VM is resource
+constrained, and its 2 GB swap file is only an OOM safety margin. The Render
+backend must have a Neon connection and Gemini key; app requests that need
+rewriting or recommendations depend on Google's API availability and cost.
+The ATS score is a heuristic, not a prediction of a specific ATS. Monitoring
 and k6 load testing are opt-in and should not be treated as evidence of
 production capacity until run against the live service.
 
@@ -406,10 +420,10 @@ production capacity until run against the live service.
 
 **Documentation status: complete for the current checked-in configuration.**
 See the [`docs/` index](./docs/README.md) for development, architecture, and
-operations guides covering the configured GCP target, local opt-in monitoring,
-and Kubernetes CI validation. This does not claim that a live deployment,
-production monitoring session, or production Kubernetes cluster has been
-verified.
+operations guides covering the configured Render/Vercel targets, local opt-in
+monitoring, and Kubernetes CI validation. This does not claim that a live
+deployment, production monitoring session, or production Kubernetes cluster
+has been verified.
 
 For the API's interactive OpenAPI page, run the backend and open
 `http://localhost:8000/docs`; health and Prometheus metrics are available at
