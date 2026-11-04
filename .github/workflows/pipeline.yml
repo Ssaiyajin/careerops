@@ -375,7 +375,8 @@ jobs:
                 --arg ref "$DEPLOY_BRANCH" \
                 --arg target "$VERCEL_TARGET" \
                 --arg sha "$COMMIT_SHA" \
-                '{name: $name, project: $project, target: $target, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}}')"
+                '{name: $name, project: $project, gitSource: {type: "github", org: $org, repo: $repo, ref: $ref, sha: $sha}} |
+                if $target == "production" then . + {target: $target} else . end')"
               create_url="https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1"
               if [[ -n "${VERCEL_TEAM_ID:-}" ]]; then
                 create_url+="&teamId=$VERCEL_TEAM_ID"
