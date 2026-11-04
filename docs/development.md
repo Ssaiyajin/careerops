@@ -71,9 +71,10 @@ Checkov, Kubernetes schema validation and a kind smoke/load test. Checkov
 scans the active GCP Terraform target; the opt-in AWS and Azure modules are
 excluded while disabled. The Python dependency audit excludes the spaCy model
 wheel because it is hosted on GitHub rather than PyPI; other requirements
-remain audited. Run the `deploy` operation in CI for the app workflow;
-Terraform import/apply are separate explicitly dispatched operations with
-their own review gate.
+remain audited. JWTs use PyJWT with HS256. Patched versions of the audited
+backend dependencies are mirrored in the root requirements file. Run the
+`deploy` operation in CI for the app workflow; Terraform import/apply are
+separate explicitly dispatched operations with their own review gate.
 
 ## Pull request expectations
 

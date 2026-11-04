@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
+import jwt
 
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = "HS256"
@@ -26,5 +26,5 @@ def create_access_token(data: dict, expires_minutes: int = 60):
 def decode_access_token(token: str):
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except JWTError:
+    except jwt.InvalidTokenError:
         return None
