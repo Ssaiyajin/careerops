@@ -190,24 +190,31 @@ tunnel when monitoring is done.
 In another terminal, run:
 
 ```sh
-docker compose --profile monitoring up -d prometheus grafana
+docker compose --profile monitoring up -d prometheus grafana cadvisor node-exporter
 ```
 
-The workstation Prometheus config scrapes the production `/metrics` endpoint
-through the SSH tunnel. After starting the monitoring profile, open
-[Prometheus](http://localhost:9090) and check
-[its targets](http://localhost:9090/targets) for `careerops-production` with
-state `UP`. Open the provisioned
-[CareerOps API Overview dashboard](http://localhost:3001/d/careerops-overview/careerops-api-overview)
-in Grafana at <http://localhost:3001> (login `admin`; the password is the
-`GRAFANA_ADMIN_PASSWORD` value in the root `.env`). Without the SSH tunnel, the
-production target will be `DOWN` and the dashboard will not show production
-metrics. The dashboard shows request rate, p95 latency (with a 500 ms
-threshold), 5xx error rate, status codes, and in-progress requests. The backend
-exports metrics at `/metrics`. This is the documented monitoring workflow:
-Prometheus and Grafana run locally. A separate VM-side Compose configuration
-exists as an optional alternative, but the normal deployment does not start it
-and its live operation has not been verified.
+The workstation Prometheus config scrapes production `/metrics` through the
+SSH tunnel, the local backend when the app stack is running, cAdvisor container
+metrics, and node-exporter host metrics. Check
+[Prometheus targets](http://localhost:9090/targets) for all four scrape jobs.
+Open [Grafana](http://localhost:3001) (login `admin`; password is the
+`GRAFANA_ADMIN_PASSWORD` value in the root `.env`) and use the dashboards:
+
+- [CareerOps API Overview](http://localhost:3001/d/careerops-overview/careerops-api-overview)
+  covers request rate, route/status breakdowns, p50/p95/p99 latency, 5xx rate,
+  active requests, and scrape health.
+- [CareerOps Infrastructure](http://localhost:3001/d/careerops-infrastructure/careerops-infrastructure)
+  covers Docker container CPU, memory, network and out-of-memory events, plus
+  host CPU, memory, disk, network, and exporter health.
+
+The local backend job stays `DOWN` until the application stack is started with
+`docker compose up --build -d`. The production job stays `DOWN` until the SSH
+tunnel above is open. On Docker Desktop for Windows, node-exporter reports the
+Linux VM used by Docker, not native Windows host metrics. cAdvisor needs access
+to the Docker socket and read-only host filesystem mounts to inspect containers;
+keep this local monitoring stack on a trusted machine. The monitoring web ports
+bind only to `127.0.0.1`. A separate VM-side Compose configuration exists as
+an optional alternative; the normal deployment does not start it.
 
 Capture screenshots and a two-minute recording once the target is `UP` and the
 live panels have data, then stop monitoring with
