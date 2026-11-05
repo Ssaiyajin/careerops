@@ -1,11 +1,15 @@
+import asyncio
+import io
 import logging
 
 import fitz
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
+from starlette.datastructures import Headers
 
 from app.api import history as history_api
 from app.api import resume as resume_api
@@ -66,8 +70,42 @@ def test_upload_no_pdf(auth_headers):
         headers=auth_headers,
     )
 
-    assert response.status_code == 200
-    assert "error" in response.json()
+    assert response.status_code == 415
+    assert response.json()["detail"] == "Only PDF files are allowed."
+
+
+def test_upload_streams_and_stops_at_the_configured_file_size_limit(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(resume_api, "MAX_UPLOAD_BYTES", 100)
+    monkeypatch.setattr(resume_api, "UPLOAD_DIR", tmp_path)
+    upload = resume_api.UploadFile(
+        file=io.BytesIO(b"x" * 101),
+        filename="large.pdf",
+        size=None,
+        headers=Headers({"content-type": "application/pdf"}),
+    )
+    read_sizes = []
+    original_read = upload.read
+
+    async def tracked_read(size=-1):
+        read_sizes.append(size)
+        return await original_read(size)
+
+    monkeypatch.setattr(upload, "read", tracked_read)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(
+            resume_api.upload_resume(
+                file=upload,
+                job_description="Python role",
+                cv_language="en",
+                current_user=object(),
+            )
+        )
+
+    assert error.value.status_code == 413
+    assert read_sizes == [resume_api.UPLOAD_CHUNK_BYTES]
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_upload_rejects_oversized_job_description(auth_headers):
@@ -102,15 +140,118 @@ def test_upload_rejects_oversized_extracted_resume(monkeypatch, auth_headers):
     assert response.status_code == 413
 
 
-def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers):
+def test_upload_selects_german_extractors_and_preserves_output_language(
+    monkeypatch, auth_headers
+):
+    seen = {}
+
+    def capture_language(name, value):
+        def capture(_text, language):
+            seen[name] = language
+            return value
+
+        return capture
+
     monkeypatch.setattr(
-        resume_api, "extract_name", lambda _: "Candidate"
+        resume_api, "extract_text_from_pdf", lambda _: "Maja Mustermann\nCloud Engineer"
     )
-    monkeypatch.setattr(resume_api, "process_text", lambda _: ["Python"])
+    monkeypatch.setattr(
+        resume_api, "extract_name", capture_language("name_language", "Maja")
+    )
+    monkeypatch.setattr(
+        resume_api, "process_text", capture_language("token_language", ["Cloud"])
+    )
     monkeypatch.setattr(
         resume_api,
         "extract_entities",
-        lambda _: {"emails": [], "phones": [], "names": [], "organizations": [], "locations": [], "dates": []},
+        capture_language(
+            "entity_language",
+            {
+                "emails": [],
+                "phones": [],
+                "names": [],
+                "organizations": [],
+                "locations": [],
+                "dates": [],
+            },
+        ),
+    )
+    monkeypatch.setattr(resume_api, "extract_skills", lambda _: [])
+    monkeypatch.setattr(
+        resume_api, "calculate_ats_score", lambda *args: {"ats_score": 50}
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "generate_ats_advice",
+        lambda *args: {"recommendations": [], "missing_keywords": []},
+    )
+    monkeypatch.setattr(resume_api, "classify_experience", lambda _: "Mid-level")
+    monkeypatch.setattr(resume_api, "parse_resume_sections", lambda _: {})
+    monkeypatch.setattr(
+        resume_api,
+        "match_resume_to_job",
+        lambda *_args: {
+            "match_score": 0,
+            "missing_skills": [],
+            "matched_skills": [],
+        },
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "semantic_job_match",
+        lambda *_args: {"semantic_match_score": None},
+    )
+    rewrite_languages = []
+
+    def capture_rewrite(*_args, **kwargs):
+        rewrite_languages.append(kwargs["resume_language"])
+        return "Lebenslauf"
+
+    monkeypatch.setattr(resume_api, "rewrite_resume", capture_rewrite)
+    recommendation_languages = []
+
+    def capture_recommendations(_text, language):
+        recommendation_languages.append(language)
+        return "Empfehlungen"
+
+    monkeypatch.setattr(
+        resume_api,
+        "generate_gemini_recommendations",
+        capture_recommendations,
+    )
+    monkeypatch.setattr(resume_api, "save_resume_analysis", lambda **_kwargs: None)
+
+    pdf = fitz.open()
+    pdf.new_page().insert_text((72, 72), "Lebenslauf")
+    pdf_bytes = pdf.tobytes()
+    pdf.close()
+    response = client.post(
+        "/api/resume/upload",
+        files={"file": ("lebenslauf.pdf", pdf_bytes, "application/pdf")},
+        data={"job_description": "Cloud Engineer", "cv_language": "de"},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["cv_language"] == "de"
+    assert seen == {
+        "name_language": "de",
+        "token_language": "de",
+        "entity_language": "de",
+    }
+    assert rewrite_languages == ["German"]
+    assert recommendation_languages == ["German"]
+
+
+def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers):
+    monkeypatch.setattr(
+        resume_api, "extract_name", lambda *_args: "Candidate"
+    )
+    monkeypatch.setattr(resume_api, "process_text", lambda *_args: ["Python"])
+    monkeypatch.setattr(
+        resume_api,
+        "extract_entities",
+        lambda *_args: {"emails": [], "phones": [], "names": [], "organizations": [], "locations": [], "dates": []},
     )
     monkeypatch.setattr(
         resume_api,
@@ -129,9 +270,13 @@ def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers)
         "semantic_job_match",
         lambda *args: {"semantic_match_score": None},
     )
-    monkeypatch.setattr(resume_api, "rewrite_resume", lambda *args: "Rewritten resume")
     monkeypatch.setattr(
-        resume_api, "generate_gemini_recommendations", lambda *args: "Recommendations"
+        resume_api, "rewrite_resume", lambda *args, **_kwargs: "Rewritten resume"
+    )
+    monkeypatch.setattr(
+        resume_api,
+        "generate_gemini_recommendations",
+        lambda *args, **_kwargs: "Recommendations",
     )
     pdf = fitz.open()
     page = pdf.new_page()
@@ -147,6 +292,8 @@ def test_valid_pdf_upload_persists_job_specific_match(monkeypatch, auth_headers)
     )
 
     assert response.status_code == 200
+    assert response.json()["cv_language"] == "en"
+    assert response.json()["ats_score_type"] == "heuristic"
     assert response.json()["job_description"] == (
         "Looking for Python, Kubernetes, and AWS."
     )
@@ -172,12 +319,12 @@ def test_upload_failure_logs_do_not_include_exception_message(
     def fail_save_resume_analysis(**_kwargs):
         raise RuntimeError("private resume content")
 
-    monkeypatch.setattr(resume_api, "extract_name", lambda _: "Candidate")
-    monkeypatch.setattr(resume_api, "process_text", lambda _: ["Python"])
+    monkeypatch.setattr(resume_api, "extract_name", lambda *_args: "Candidate")
+    monkeypatch.setattr(resume_api, "process_text", lambda *_args: ["Python"])
     monkeypatch.setattr(
         resume_api,
         "extract_entities",
-        lambda _: {"emails": [], "phones": [], "names": [], "organizations": [], "locations": [], "dates": []},
+        lambda *_args: {"emails": [], "phones": [], "names": [], "organizations": [], "locations": [], "dates": []},
     )
     monkeypatch.setattr(
         resume_api,
@@ -196,11 +343,13 @@ def test_upload_failure_logs_do_not_include_exception_message(
         "semantic_job_match",
         lambda *args: {"semantic_match_score": None},
     )
-    monkeypatch.setattr(resume_api, "rewrite_resume", lambda *args: "Rewritten resume")
+    monkeypatch.setattr(
+        resume_api, "rewrite_resume", lambda *args, **_kwargs: "Rewritten resume"
+    )
     monkeypatch.setattr(
         resume_api,
         "generate_gemini_recommendations",
-        lambda *args: "Recommendations",
+        lambda *args, **_kwargs: "Recommendations",
     )
     monkeypatch.setattr(
         resume_api,

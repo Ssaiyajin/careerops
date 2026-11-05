@@ -1,10 +1,15 @@
 import { API_BASE_URL } from "./index";
 
-export async function uploadResume(file: File, jobDescription: string) {
+export async function uploadResume(
+  file: File,
+  jobDescription: string,
+  cvLanguage: "en" | "de" = "en"
+) {
   const formData = new FormData();
 
   formData.append("file", file);
   formData.append("job_description", jobDescription);
+  formData.append("cv_language", cvLanguage);
 
   const response = await fetch(`${API_BASE_URL}/api/resume/upload`, {
     method: "POST",

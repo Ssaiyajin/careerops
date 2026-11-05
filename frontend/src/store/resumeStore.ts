@@ -12,7 +12,11 @@ export type ResumeData = {
   };
   semantic_match?: {
     semantic_match_score?: number | null;
-    semantic_match_method?: "sentence_embeddings" | "text_similarity" | "unavailable";
+    semantic_match_method?:
+      | "gemini_embeddings"
+      | "sentence_embeddings"
+      | "text_similarity"
+      | "unavailable";
   };
   ai_recommendations?: string;
   ats_advice?: { recommendations?: string[]; missing_keywords?: string[] };

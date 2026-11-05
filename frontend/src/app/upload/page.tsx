@@ -20,6 +20,7 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
 
   const [jobDescription, setJobDescription] = useState("");
+  const [cvLanguage, setCvLanguage] = useState<"en" | "de">("en");
   const [aiProcessingConsent, setAiProcessingConsent] = useState(false);
 
   const handleFileChange = async (
@@ -64,7 +65,7 @@ export default function UploadPage() {
 
         await new Promise((r) => setTimeout(r, 500));
 
-        setStatus("Calculating ATS Score...");
+        setStatus("Calculating heuristic ATS estimate...");
         setProgress(60);
 
         await new Promise((r) => setTimeout(r, 500));
@@ -72,7 +73,7 @@ export default function UploadPage() {
         setStatus("Running AI Analysis...");
         setProgress(80);
 
-        const data = await uploadResume(file, jobDescription);
+        const data = await uploadResume(file, jobDescription, cvLanguage);
 
         setStatus("Analysis Complete");
         setProgress(100);
@@ -152,6 +153,29 @@ export default function UploadPage() {
             "
           />
 
+        </div>
+        <div className="mx-auto mt-5 w-full max-w-4xl text-left">
+          <label
+            htmlFor="cv-language"
+            className="mb-2 block text-sm text-white/70"
+          >
+            Resume language
+          </label>
+          <select
+            id="cv-language"
+            value={cvLanguage}
+            onChange={(event) =>
+              setCvLanguage(event.target.value === "de" ? "de" : "en")
+            }
+            disabled={uploading}
+            className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-white outline-none focus:border-green-400"
+          >
+            <option value="en">English</option>
+            <option value="de">German (Deutsch)</option>
+          </select>
+          <p className="mt-2 text-xs text-white/45">
+            Select the resume&apos;s language for text analysis and name extraction.
+          </p>
         </div>
         {/* Upload Card */}
         <div
@@ -260,7 +284,7 @@ export default function UploadPage() {
               className="mt-1 accent-green-500"
             />
             <span>
-              I understand that my resume text is sent to an AI model for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to an AI model. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
+              I understand that my resume text and job description are sent to Google Gemini for embedding-based semantic matching, and my resume text is sent for recommendations and rewriting. If I generate a cover letter, my resume text and job description are also sent to Google Gemini. CareerOps retains my extracted resume for up to 90 days or until I delete my account; provider backups may retain deleted data for up to 30 days.
             </span>
           </label>
 

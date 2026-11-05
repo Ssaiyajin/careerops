@@ -11,9 +11,14 @@ DATE_REGEX = r"\b(?:\d{2}/\d{4}|\d{4})\b"
 
 KNOWN_LOCATIONS = [
     "Germany",
+    "Deutschland",
     "Berlin",
     "Hamburg",
     "Munich",
+    "München",
+    "Köln",
+    "Frankfurt",
+    "Stuttgart",
     "London",
     "USA",
     "UK",
@@ -43,9 +48,9 @@ def clean_entities(values):
     return cleaned
 
 
-def extract_entities(text: str):
+def extract_entities(text: str, language: str = "en"):
 
-    nlp = get_nlp()
+    nlp = get_nlp(language)
 
     entities = {
         "names": [],
@@ -65,7 +70,7 @@ def extract_entities(text: str):
             # ======================
             # PERSON
             # ======================
-            if ent.label_ == "PERSON":
+            if ent.label_ in ("PERSON", "PER"):
 
                 # Ignore digits
                 if any(char.isdigit() for char in value):

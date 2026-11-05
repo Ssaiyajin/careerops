@@ -7,7 +7,7 @@ def classify_experience(text: str):
 
     # Find explicit years
     years_matches = re.findall(
-        r"(\d+)\+?\s+years",
+        r"(\d+)\+?\s+(?:years|jahre)",
         text_lower
     )
 
@@ -26,6 +26,10 @@ def classify_experience(text: str):
         "principal engineer",
         "software architect",
         "staff engineer",
+        "leitender ingenieur",
+        "senior softwareentwickler",
+        "senior entwickler",
+        "technischer leiter",
     ]
 
     # Strong mid indicators
@@ -35,6 +39,10 @@ def classify_experience(text: str):
         "cloud engineer",
         "backend engineer",
         "full stack developer",
+        "softwareentwickler",
+        "devops engineer",
+        "cloud engineer",
+        "backend-entwickler",
     ]
 
     # Senior logic

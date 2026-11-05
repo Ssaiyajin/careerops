@@ -377,6 +377,11 @@ body {
     animation: none;
   }
 
+  .career-coach-orb::after,
+  .career-coach-panel {
+    animation: none;
+  }
+
   .careerops-scene-grid,
   .careerops-scene-glow-a,
   .careerops-scene-glow-b,
@@ -398,6 +403,298 @@ body {
   [data-scene] .careerops-scene-results-chart path:first-child,
   [data-scene] .careerops-scene-timeline-node {
     animation: none;
+  }
+}
+
+.career-coach-widget {
+  position: fixed;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 60;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.career-coach-launcher {
+  display: grid;
+  width: 4.5rem;
+  height: 4.5rem;
+  place-items: center;
+  border: 1px solid rgb(134 239 172 / 70%);
+  border-radius: 9999px;
+  background: #071511;
+  box-shadow: 0 0 28px rgb(34 197 94 / 35%), 0 12px 40px rgb(0 0 0 / 55%);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.career-coach-launcher:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 0 36px rgb(34 197 94 / 55%), 0 12px 40px rgb(0 0 0 / 55%);
+}
+
+.career-coach-launcher:focus-visible,
+.career-coach-widget button:focus-visible,
+.career-coach-widget input:focus-visible,
+.career-coach-widget textarea:focus-visible,
+.career-coach-context summary:focus-visible {
+  outline: 2px solid #86efac;
+  outline-offset: 3px;
+}
+
+.career-coach-orb {
+  position: relative;
+  display: grid;
+  width: 3.75rem;
+  height: 3.75rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #16442d 0%, #071511 74%);
+}
+
+.career-coach-orb::after {
+  position: absolute;
+  inset: -0.3rem;
+  border: 1px solid rgb(134 239 172 / 48%);
+  border-radius: inherit;
+  content: "";
+  animation: career-coach-aura 2.8s ease-out infinite;
+}
+
+.career-coach-orb svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px rgb(74 222 128 / 50%));
+}
+
+.career-coach-orb-small {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+}
+
+.career-coach-panel {
+  position: absolute;
+  right: 0;
+  bottom: 5.25rem;
+  display: flex;
+  width: min(27rem, calc(100vw - 2rem));
+  max-height: min(44rem, calc(100dvh - 8rem));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgb(134 239 172 / 24%);
+  border-radius: 1.25rem;
+  background: rgb(5 12 13 / 97%);
+  box-shadow: 0 25px 90px rgb(0 0 0 / 70%), 0 0 34px rgb(34 197 94 / 12%);
+  color: white;
+  animation: career-coach-enter 180ms ease-out both;
+  backdrop-filter: blur(20px);
+}
+
+.career-coach-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgb(255 255 255 / 9%);
+  padding: 1rem;
+}
+
+.career-coach-close {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: none;
+  place-items: center;
+  border-radius: 9999px;
+  color: rgb(255 255 255 / 70%);
+  font-size: 1.5rem;
+}
+
+.career-coach-close:hover {
+  background: rgb(255 255 255 / 8%);
+  color: white;
+}
+
+.career-coach-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  border-bottom: 1px solid rgb(255 255 255 / 9%);
+  padding: 0.65rem 0.75rem;
+}
+
+.career-coach-tab {
+  min-height: 2.4rem;
+  border-radius: 0.65rem;
+  padding: 0.35rem 0.25rem;
+  color: rgb(255 255 255 / 58%);
+  font-size: 0.72rem;
+  line-height: 1rem;
+}
+
+.career-coach-tab:hover {
+  color: white;
+  background: rgb(255 255 255 / 6%);
+}
+
+.career-coach-tab-active {
+  background: rgb(34 197 94 / 13%);
+  color: #bbf7d0;
+}
+
+.career-coach-transcript {
+  display: flex;
+  min-height: 8rem;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.career-coach-welcome,
+.career-coach-message {
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 4%);
+  padding: 0.8rem 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.career-coach-message-user {
+  align-self: flex-end;
+  border-color: rgb(74 222 128 / 20%);
+  background: rgb(34 197 94 / 11%);
+  color: #dcfce7;
+}
+
+.career-coach-context {
+  margin: 0 1rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.85rem;
+  padding: 0.7rem 0.8rem;
+}
+
+.career-coach-context summary {
+  cursor: pointer;
+  color: rgb(255 255 255 / 74%);
+  font-size: 0.78rem;
+}
+
+.career-coach-label {
+  display: grid;
+  gap: 0.35rem;
+  color: rgb(255 255 255 / 68%);
+  font-size: 0.75rem;
+}
+
+.career-coach-field {
+  width: 100%;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 5%);
+  padding: 0.65rem 0.75rem;
+  color: white;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.career-coach-field::placeholder {
+  color: rgb(255 255 255 / 35%);
+}
+
+.career-coach-compose {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem 0;
+}
+
+.career-coach-form {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem 0;
+}
+
+.career-coach-primary,
+.career-coach-secondary {
+  border: 1px solid rgb(134 239 172 / 35%);
+  border-radius: 0.7rem;
+  background: rgb(34 197 94 / 13%);
+  padding: 0.65rem 0.85rem;
+  color: #dcfce7;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.career-coach-primary:hover:not(:disabled),
+.career-coach-secondary:hover {
+  background: rgb(34 197 94 / 24%);
+}
+
+.career-coach-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.career-coach-secondary {
+  padding: 0.45rem 0.65rem;
+  font-size: 0.7rem;
+}
+
+.career-coach-error {
+  margin: 0.65rem 1rem 0;
+  border: 1px solid rgb(248 113 113 / 25%);
+  border-radius: 0.65rem;
+  background: rgb(127 29 29 / 18%);
+  padding: 0.6rem 0.7rem;
+  color: #fecaca;
+  font-size: 0.75rem;
+}
+
+.career-coach-disclaimer {
+  padding: 0.65rem 1rem 0.85rem;
+  color: rgb(255 255 255 / 38%);
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+@keyframes career-coach-aura {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.75;
+  }
+
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@keyframes career-coach-enter {
+  from {
+    transform: translateY(0.6rem) scale(0.98);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 420px) {
+  .career-coach-widget {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+
+  .career-coach-panel {
+    right: -0.15rem;
+    width: calc(100vw - 1.5rem);
+    max-height: calc(100dvh - 6.5rem);
   }
 }
 

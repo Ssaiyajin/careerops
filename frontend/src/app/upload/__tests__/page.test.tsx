@@ -10,7 +10,11 @@ jest.mock("next/navigation", () => ({
 }));
 
 jest.mock("@/lib/api/rewrite", () => ({
-  uploadResume: (file: File, jobDescription: string) => mockUploadResume(file, jobDescription)
+  uploadResume: (
+    file: File,
+    jobDescription: string,
+    cvLanguage: "en" | "de"
+  ) => mockUploadResume(file, jobDescription, cvLanguage)
 }));
 
 jest.mock("@/lib/auth/auth-guard", () => ({
@@ -71,6 +75,7 @@ describe("UploadPage", () => {
         expect(calledFile).toBeInstanceOf(File);
         expect((calledFile as File).name).toBe("test.pdf");
         expect(calledDescription).toBe("Senior Cloud Engineer role");
+        expect(mockUploadResume.mock.calls[0][2]).toBe("en");
       },
       { timeout: 5000 }
     );
@@ -104,6 +109,36 @@ describe("UploadPage", () => {
     fireEvent.change(textarea, { target: { value: "This is a job description" } });
 
     expect((textarea as HTMLTextAreaElement).value).toBe("This is a job description");
+  });
+
+  it("sends the selected German resume language for analysis", async () => {
+    mockUploadResume.mockResolvedValue({
+      skills: [],
+      candidate_name: "Test User",
+      ats: { ats_score: 50, recommendations: [] },
+      text_preview: "Lebenslauf",
+    });
+
+    render(<UploadPage />);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.change(screen.getByLabelText("Resume language"), {
+      target: { value: "de" },
+    });
+
+    const file = new File(["resume"], "lebenslauf.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByTestId("upload-file-input"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(mockUploadResume).toHaveBeenCalledWith(
+        file,
+        "",
+        "de"
+      );
+    }, { timeout: 5000 });
   });
 
   it("shows the backend upload error on the page", async () => {

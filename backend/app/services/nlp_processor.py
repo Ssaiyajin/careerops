@@ -21,9 +21,9 @@ STOPWORDS = {
 }
 
 
-def process_text(text: str):
+def process_text(text: str, language: str = "en"):
 
-    nlp = get_nlp()
+    nlp = get_nlp(language)
 
     if nlp is None:
         tokens = re.findall(r"\b\w+\b", text)

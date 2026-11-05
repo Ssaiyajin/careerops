@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="740" viewBox="0 0 1440 740" role="img" aria-labelledby="title description">
+  <title id="title">CareerOps deployment architecture</title>
+  <desc id="description">Development and production branches deploy to separate Render APIs and Vercel frontends. Vercel proxies API calls over HTTPS. Both APIs use PostgreSQL and Gemini. GCP deployment is paused.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#07100d"/>
+      <stop offset="1" stop-color="#101a22"/>
+    </linearGradient>
+    <linearGradient id="green" x2="1">
+      <stop stop-color="#14532d"/>
+      <stop offset="1" stop-color="#166534"/>
+    </linearGradient>
+    <linearGradient id="blue" x2="1">
+      <stop stop-color="#172554"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#81978c"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#4ade80"/>
+    </marker>
+    <style>
+      .label { font: 700 17px Arial,sans-serif; fill: #f0fdf4 }
+      .sub { font: 14px Arial,sans-serif; fill: #b0beb7 }
+      .tiny { font: 12px Arial,sans-serif; fill: #8c9d94 }
+      .edge { stroke: #81978c; stroke-width: 2; fill: none; marker-end: url(#arrow) }
+      .prod { stroke: #4ade80; stroke-width: 2.5; fill: none; marker-end: url(#arrowGreen) }
+    </style>
+  </defs>
+  <rect width="1440" height="740" rx="30" fill="url(#bg)"/>
+  <text x="62" y="66" fill="#86efac" font-family="Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="3">CAREEROPS · DEPLOYMENT ARCHITECTURE</text>
+  <text x="62" y="101" fill="#e2e8e4" font-family="Arial,sans-serif" font-size="18">Branch-specific services with a protected production release</text>
+
+  <rect x="60" y="160" width="210" height="112" rx="18" fill="#17211d" stroke="#486054" stroke-width="2"/>
+  <text class="label" x="165" y="203" text-anchor="middle">GitHub Actions</text>
+  <text class="sub" x="165" y="232" text-anchor="middle">Tests · scans · smoke checks</text>
+  <text class="tiny" x="165" y="254" text-anchor="middle">main and dev branches</text>
+
+  <rect x="324" y="139" width="205" height="92" rx="16" fill="url(#green)" stroke="#4ade80" stroke-width="2"/>
+  <text class="label" x="426" y="177" text-anchor="middle">dev</text>
+  <text class="sub" x="426" y="204" text-anchor="middle">automatic after CI</text>
+  <rect x="324" y="278" width="205" height="92" rx="16" fill="url(#blue)" stroke="#60a5fa" stroke-width="2"/>
+  <text class="label" x="426" y="316" text-anchor="middle">main</text>
+  <text class="sub" x="426" y="343" text-anchor="middle">production approval</text>
+
+  <path class="edge" d="M270 190H300V185H319"/>
+  <path class="edge" d="M270 230H300V324H319"/>
+
+  <rect x="586" y="139" width="226" height="92" rx="16" fill="#151d1b" stroke="#34d399" stroke-width="2"/>
+  <text class="label" x="699" y="177" text-anchor="middle">Vercel Preview</text>
+  <text class="sub" x="699" y="204" text-anchor="middle">Next.js frontend · dev</text>
+  <rect x="586" y="278" width="226" height="92" rx="16" fill="#151d1b" stroke="#60a5fa" stroke-width="2"/>
+  <text class="label" x="699" y="316" text-anchor="middle">Vercel Production</text>
+  <text class="sub" x="699" y="343" text-anchor="middle">Next.js frontend · main</text>
+
+  <rect x="586" y="432" width="226" height="86" rx="16" fill="#1c1718" stroke="#f87171" stroke-width="2" stroke-dasharray="7 6"/>
+  <text class="label" x="699" y="468" text-anchor="middle">GCP VM</text>
+  <text x="699" y="495" fill="#fca5a5" font-family="Arial,sans-serif" font-size="13" text-anchor="middle">application deployment paused</text>
+
+  <path class="edge" d="M529 185H558V185H581"/>
+  <path class="edge" d="M529 324H558V324H581"/>
+
+  <rect x="870" y="139" width="236" height="92" rx="16" fill="url(#green)" stroke="#4ade80" stroke-width="2"/>
+  <text class="label" x="988" y="177" text-anchor="middle">Render Dev API</text>
+  <text class="sub" x="988" y="204" text-anchor="middle">FastAPI · HTTPS</text>
+  <rect x="870" y="278" width="236" height="92" rx="16" fill="url(#blue)" stroke="#60a5fa" stroke-width="2"/>
+  <text class="label" x="988" y="316" text-anchor="middle">Render Production API</text>
+  <text class="sub" x="988" y="343" text-anchor="middle">FastAPI · HTTPS</text>
+
+  <path class="edge" d="M812 185H865"/>
+  <path class="prod" d="M812 324H865"/>
+  <path d="M812 185H842V324H865" stroke="#50675b" stroke-width="1.5" stroke-dasharray="5 6" fill="none" marker-end="url(#arrow)"/>
+  <text class="tiny" x="837" y="252" transform="rotate(-90 837 252)" text-anchor="middle">server-side HTTPS API proxy</text>
+
+  <rect x="1170" y="139" width="208" height="92" rx="16" fill="#17231f" stroke="#64756c" stroke-width="2"/>
+  <text class="label" x="1274" y="177" text-anchor="middle">PostgreSQL</text>
+  <text class="sub" x="1274" y="204" text-anchor="middle">configured database</text>
+  <rect x="1170" y="278" width="208" height="92" rx="16" fill="#17231f" stroke="#64756c" stroke-width="2"/>
+  <text class="label" x="1274" y="316" text-anchor="middle">Gemini API</text>
+  <text class="sub" x="1274" y="343" text-anchor="middle">AI-assisted features</text>
+  <path class="edge" d="M1106 168H1145V181H1165"/>
+  <path class="edge" d="M1106 202H1145V324H1165"/>
+  <path class="edge" d="M1106 307H1145V181H1165"/>
+  <path class="edge" d="M1106 344H1165"/>
+
+  <rect x="72" y="567" width="1296" height="112" rx="18" fill="#0b1311" stroke="#33453b"/>
+  <text x="102" y="607" fill="#86efac" font-family="Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="1">OPTIONAL OBSERVABILITY</text>
+  <text x="102" y="640" fill="#c5d0ca" font-family="Arial,sans-serif" font-size="15">Local Prometheus + Grafana → API metrics when the target is reachable; legacy GCP VM monitoring is separate and optional.</text>
+  <text x="102" y="663" fill="#8c9d94" font-family="Arial,sans-serif" font-size="13">Pausing the GCP deployment workflow does not stop or delete existing cloud resources.</text>
+</svg>

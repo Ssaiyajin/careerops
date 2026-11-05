@@ -12,6 +12,7 @@ def rewrite_resume(
     ats_advice: dict,
     job_description: str = "",
     improvement_instructions: str = "",
+    resume_language: str = "English",
 ):
 
     prompt = f"""
@@ -19,6 +20,7 @@ def rewrite_resume(
 
         GOAL:
         Rewrite the resume into a professional ATS-optimized resume suitable for DevOps, Cloud Engineering, Platform Engineering, Site Reliability Engineering, Backend Engineering, and Software Engineering positions.
+        Write the entire final resume in {resume_language}, preserving the source language and not translating it.
 
         STRICT RULES:
 

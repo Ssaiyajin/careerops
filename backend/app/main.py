@@ -1,3 +1,5 @@
+"""FastAPI application used by the GCP VM production deployment."""
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager, suppress
@@ -13,6 +15,7 @@ from app.api.rewrite import router as rewrite_router
 from app.api.coverletter import router as cover_letter_router
 from app.api.export import router as export_router
 from app.api.auth import router as auth_router
+from app.api.career import router as career_router
 from app.database.database_service import purge_expired_resume_analyses
 from app.database.migrations import upgrade_database_schema
 
@@ -117,4 +120,10 @@ app.include_router(
     auth_router,
     prefix="/api/auth",
     tags=["Authentication"]
+)
+
+app.include_router(
+    career_router,
+    prefix="/api",
+    tags=["Career coaching"]
 )

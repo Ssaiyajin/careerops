@@ -3,29 +3,44 @@ SECTION_KEYWORDS = {
         "education",
         "academic",
         "university",
+        "bildung",
+        "ausbildung",
+        "berufsausbildung",
+        "bildungsweg",
+        "studium",
     ],
 
     "experience": [
         "experience",
         "employment",
         "work experience",
+        "berufserfahrung",
+        "beruflicher werdegang",
+        "berufliche erfahrung",
     ],
 
     "projects": [
         "projects",
         "personal projects",
+        "projekte",
     ],
 
     "skills": [
         "skills",
         "technical skills",
         "technologies",
+        "kenntnisse",
+        "fähigkeiten",
+        "faehigkeiten",
+        "kompetenzen",
     ],
 
     "certifications": [
         "certifications",
         "licenses",
         "certificates",
+        "zertifikate",
+        "zertifizierungen",
     ]
 }
 
