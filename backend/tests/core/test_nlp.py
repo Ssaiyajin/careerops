@@ -29,9 +29,11 @@ def test_cv_language_selects_the_matching_spacy_pipeline(monkeypatch):
 
 def test_german_name_entities_and_resume_sections_are_recognized(monkeypatch):
     entity = SimpleNamespace(text="Maja Mustermann", label_="PER")
+    def fake_nlp(text):
+        return SimpleNamespace(ents=[entity])
     monkeypatch.setattr(
         "app.services.entity_extractor.get_nlp",
-        lambda language: SimpleNamespace(ents=[entity]) if language == "de" else None,
+        lambda language: fake_nlp if language == "de" else None,
     )
 
     extracted = extract_entities("Maja Mustermann\nBerlin", language="de")
