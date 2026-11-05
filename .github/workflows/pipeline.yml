@@ -240,7 +240,7 @@ jobs:
 
   deploy-render:
     name: Deploy backend to Render
-    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    if: github.ref == 'refs/heads/dev' && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: [backend-tests, frontend-tests, dependency-audit, secret-scan, k8s-kind-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -351,7 +351,7 @@ jobs:
 
   deploy-vercel:
     name: Deploy frontend to Vercel
-    if: (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
+    if: always() && (needs.deploy-render.result == 'success' || needs.deploy-render.result == 'skipped') && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') && github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.operation == 'deploy')
     needs: deploy-render
     runs-on: ubuntu-latest
     timeout-minutes: 25
