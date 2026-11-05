@@ -359,7 +359,7 @@ export default function ResultsPage() {
           {/* DASHBOARD */}
           <div className="mt-16 grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              label="ATS Compatibility"
+              label="Heuristic ATS estimate"
               value={`${atsScore}%`}
               percent={atsScore}
               valueClassName={
@@ -371,6 +371,11 @@ export default function ResultsPage() {
               }
               barFrom="from-green-400"
               barTo="to-emerald-500"
+              footer={
+                <p className="mt-4 text-center text-xs text-white/50">
+                  Rule-based guidance only; not a score from an ATS product.
+                </p>
+              }
             />
             <StatCard
               label="Job Match Score"

@@ -1,5 +1,7 @@
 import re
 
+from app.core.nlp import get_nlp
+
 BANNED_WORDS = [
     "resume",
     "developer",
@@ -16,6 +18,7 @@ BANNED_WORDS = [
     "next.js",
     "bamberg",
     "germany",
+    "deutschland",
 ]
 
 
@@ -36,7 +39,13 @@ def looks_like_name(line: str):
     return True
 
 
-def extract_name(text: str):
+def extract_name(text: str, language: str = "en"):
+    nlp = get_nlp(language)
+    if nlp is not None:
+        doc = nlp(text[:20_000])
+        for entity in doc.ents:
+            if entity.label_ in ("PERSON", "PER"):
+                return entity.text.strip()
 
     lines = text.split("\n")
 

@@ -103,9 +103,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip pip-audit
           requirements="$RUNNER_TEMP/backend-requirements-audit.txt"
-          grep -vE '^[[:space:]]*en_core_web_sm[[:space:]]*@' \
+          grep -vE '^[[:space:]]*(en_core_web_sm|de_core_news_sm)[[:space:]]*@' \
             backend/requirements.txt > "$requirements"
-          echo "Skipping en_core_web_sm: the spaCy model wheel is hosted on GitHub and is not indexed by PyPI."
+          echo "Skipping spaCy model wheels: they are hosted on GitHub and are not indexed by PyPI."
           pip-audit -r "$requirements"
 
       - name: Trivy filesystem scan
@@ -302,6 +302,16 @@ jobs:
               case "$status" in
                 live)
                   echo "Render deployment for $COMMIT_SHA is live."
+                  service="$(curl --fail --silent --show-error \
+                    --header "Authorization: ******" \
+                    --header "Accept: application/json" \
+                    "https://api.render.com/v1/services/${RENDER_SERVICE_ID}")"
+                  service_url="$(jq -er '.serviceDetails.url // .url' <<< "$service")"
+                  health="$(curl --fail --silent --show-error --location \
+                    --retry 20 --retry-connrefused --retry-delay 3 --max-time 15 \
+                    "${service_url%/}/health")"
+                  jq -e '.status == "healthy"' <<< "$health" > /dev/null
+                  echo "Render /health returned healthy for $COMMIT_SHA."
                   exit 0
                   ;;
                 build_failed|update_failed|pre_deploy_failed|canceled)
@@ -337,6 +347,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
           VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID || secrets.VERCEL_TEAM_ID }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
           VERCEL_TARGET: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
           DEPLOY_BRANCH: ${{ github.ref == 'refs/heads/main' && 'main' || 'dev' }}
           COMMIT_SHA: ${{ github.sha }}
@@ -416,7 +427,16 @@ jobs:
             case "$state" in
               READY)
                 url="$(jq -r '.deployments[0].url // empty' <<< "$deployments")"
-                echo "Vercel $VERCEL_TARGET deployment for $COMMIT_SHA is ready: ${url:-URL not provided}"
+                : "${url:?Vercel reported READY without a deployment URL}"
+                headers=()
+                if [[ -n "${VERCEL_AUTOMATION_BYPASS_SECRET:-}" ]]; then
+                  headers+=(--header "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET")
+                fi
+                curl --fail --silent --show-error --location \
+                  --retry 20 --retry-connrefused --retry-delay 3 --max-time 30 \
+                  "${headers[@]}" \
+                  "https://${url}/" > /dev/null
+                echo "Vercel $VERCEL_TARGET deployment for $COMMIT_SHA is ready and its homepage responds: https://${url}/"
                 exit 0
                 ;;
               ERROR|CANCELED|BLOCKED)

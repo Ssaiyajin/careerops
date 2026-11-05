@@ -62,14 +62,29 @@ constraints.
 
 #### Implemented
 - PDF resume upload and text extraction
+- English and German CV extraction with a language choice on upload
 - Skill and contact extraction
-- Resume analysis and job-description skill matching
+- Resume analysis and job-description skill matching, using Gemini embeddings
+  for semantic comparison by default and logged TF-IDF text similarity if
+  embeddings are unavailable
 - Resume rewriting, cover-letter generation, and resume recommendations through Google Gemini
 - Resume history and DOCX export
 - Authenticated career chat, tailored interview preparation, and time-bounded learning plans through Google Gemini
 - A floating, animated CareerOps coach available to signed-in users
 
-The ATS score is a deterministic heuristic based on extracted skills, contact details, resume length, and a small set of certification keywords. It is not produced by an AI model and does not predict the score from a specific applicant tracking system. Semantic matching is optional and depends on its backend setting.
+The results page labels the ATS score as a **heuristic estimate**. It is a
+deterministic calculation based on extracted skills, contact details, resume
+length, and a small set of certification keywords; it is not produced by an
+ATS product and does not predict a score from a specific applicant tracking
+system. Semantic job matching uses Gemini embeddings when available and
+reports its method; if embedding requests fail, it logs the failure and uses
+TF-IDF text similarity instead.
+
+The upload form defaults to English and lets users select German. The backend
+uses the corresponding small spaCy pipeline (`en_core_web_sm` or
+`de_core_news_sm`); both pinned model packages are installed from
+`backend/requirements.txt`. Keep `ENABLE_SPACY=true` in the backend environment
+to enable language-aware extraction.
 
 Gemini requests use the external Google Gemini API with the `gemini-2.5-flash` model and require `GEMINI_API_KEY`. Resume recommendations, rewrites, and cover letters are therefore subject to provider availability, terms, and usage costs.
 
@@ -152,6 +167,7 @@ flowchart LR
 #### AI
 
 - Google Gemini API (`gemini-2.5-flash`) for resume recommendations, rewriting, and cover letters
+- Google Gemini embeddings (`gemini-embedding-001`) for semantic resume/job matching
 
 ---
 
@@ -362,7 +378,8 @@ the reserved provider extension point is not connected to any request path.
 
 Resume text and analysis results are automatically removed from the active database after 90 days (`RESUME_RETENTION_DAYS`, swept daily). The History page also provides immediate account deletion for the account, saved analyses, and usage events. Managed database backups are outside the application; the release policy is a maximum 30-day backup retention, which must be configured and verified with the database provider.
 
-Resume text is sent to Google's Gemini API for recommendations and rewriting.
+Resume text is sent to Google's Gemini API for semantic embeddings,
+recommendations, and rewriting.
 Generating a cover letter also sends resume text and the supplied job
 description to Gemini. Career-coach requests send the prompt and any optional
 resume/job-description context included with the request to Gemini. Loading the
@@ -421,14 +438,21 @@ is disabled.
 Configure `RENDER_API_KEY`, `RENDER_DEV_SERVICE_ID`, `RENDER_PROD_SERVICE_ID`,
 `VERCEL_TOKEN`, and `VERCEL_PROJECT_ID` in GitHub Actions settings. Configure
 Vercel `BACKEND_API_URL` separately for Production and Preview, pointing to
-their matching Render services. Store app credentials in the Render service
-environment, never in the repository. See the runbook for details.
+their matching Render services. Configure `VERCEL_TEAM_ID` if the project is
+team-scoped and `VERCEL_AUTOMATION_BYPASS_SECRET` if deployment protection
+requires an HTTP bypass for the post-deploy homepage probe. The Render job now
+waits for the commit's deployment to become live and checks its `/health`
+response; the Vercel job waits for a ready deployment and requests its
+homepage. Store app credentials in the Render service environment, never in
+the repository. See the runbook for details.
 
 ### Current state and limitations
 
-The Render/Vercel workflow is configured, but provider credentials, service
-settings, plan limits, and live deployment state have not been verified from
-this workspace. GCP image publishing and VM deployment are paused; pausing CI
+The Render/Vercel workflow includes provider-state and HTTP health probes, but
+provider credentials, service settings, plan limits, and live deployment state
+have not been verified from this workspace; a successful CI run of both
+deployment jobs is required to verify the deployed services. GCP image
+publishing and VM deployment are paused; pausing CI
 does not stop existing cloud resources. Monitoring is an opt-in local laptop
 stack. Kubernetes deployment is validated against kind in CI and is not
 evidence of a production cluster deployment. The legacy VM is resource

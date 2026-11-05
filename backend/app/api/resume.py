@@ -1,6 +1,7 @@
 import logging
 import uuid
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
@@ -33,12 +34,14 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
 MAX_RESUME_TEXT_CHARS = 30000
 MAX_JOB_DESCRIPTION_CHARS = 20000
+UPLOAD_CHUNK_BYTES = 64 * 1024
 
 
 @router.post("/upload")
 async def upload_resume(
     file: UploadFile = File(...),
     job_description: str = Form(..., min_length=1, max_length=MAX_JOB_DESCRIPTION_CHARS),
+    cv_language: Literal["en", "de"] = Form("en"),
     current_user: User = Depends(get_current_user),
 ):
     file_path = None
@@ -46,9 +49,13 @@ async def upload_resume(
     try:
         # Validate PDF
         if file.content_type != "application/pdf":
-            return {
-                "error": "Only PDF files are allowed"
-            }
+            raise HTTPException(status_code=415, detail="Only PDF files are allowed.")
+
+        if file.size is not None and file.size > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large — max {settings.max_upload_size_mb}MB",
+            )
 
         # Use a generated filename rather than the client-supplied one.
         # Trusting file.filename directly (e.g. writing to
@@ -58,15 +65,16 @@ async def upload_resume(
         safe_filename = f"{uuid.uuid4().hex}.pdf"
         file_path = UPLOAD_DIR / safe_filename
 
-        # Enforce a size limit before writing to disk.
-        contents = await file.read()
-        if len(contents) > MAX_UPLOAD_BYTES:
-            return {
-                "error": f"File too large — max {settings.max_upload_size_mb}MB"
-            }
-
         with open(file_path, "wb") as buffer:
-            buffer.write(contents)
+            total_bytes = 0
+            while chunk := await file.read(UPLOAD_CHUNK_BYTES):
+                total_bytes += len(chunk)
+                if total_bytes > MAX_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File too large — max {settings.max_upload_size_mb}MB",
+                    )
+                buffer.write(chunk)
 
         # Extract PDF text
         stage = "extracting resume text"
@@ -76,15 +84,15 @@ async def upload_resume(
                 status_code=413,
                 detail=f"Extracted resume text exceeds {MAX_RESUME_TEXT_CHARS} characters.",
             )
-        candidate_name = extract_name(extracted_text)
+        candidate_name = extract_name(extracted_text, cv_language)
         stage = "analyzing resume content"
-        tokens = process_text(extracted_text)
+        tokens = process_text(extracted_text, cv_language)
 
         # Extract skills
         skills = extract_skills(extracted_text)
 
         # Extract entities
-        entities = extract_entities(extracted_text)
+        entities = extract_entities(extracted_text, cv_language)
 
         ats_data = calculate_ats_score(
         skills,
@@ -125,14 +133,16 @@ async def upload_resume(
         skills,
         sections,
         experience_level,
-        ats_advice
+        ats_advice,
+        resume_language="German" if cv_language == "de" else "English",
     )
         stage = "generating AI recommendations"
         try:
 
              ai_recommendations = (
             generate_gemini_recommendations(
-                extracted_text
+                extracted_text,
+                language="German" if cv_language == "de" else "English",
                     )
             )
 
@@ -175,6 +185,8 @@ async def upload_resume(
         "ats_advice": ats_advice,
         "rewritten_resume": rewritten_resume,
         "job_description": job_description,
+        "cv_language": cv_language,
+        "ats_score_type": "heuristic",
         }
     
     except HTTPException:

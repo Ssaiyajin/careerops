@@ -47,9 +47,11 @@ def ask_gemini(prompt: str):
 
     return GEMINI_UNAVAILABLE_RESPONSE
 
-def generate_gemini_recommendations(text: str):
+def generate_gemini_recommendations(text: str, language: str = "English"):
 
     prompt = f"""
+Respond in {language}.
+
 Analyze this resume and provide:
 
 1. ATS improvement suggestions

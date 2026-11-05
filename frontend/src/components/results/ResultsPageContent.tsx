@@ -316,11 +316,12 @@ export default function ResultsPageContent() {
 
           <div className="mt-16 grid w-full grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             <MetricCard
-              title="ATS Compatibility"
+              title="Heuristic ATS estimate"
               value={`${atsScore}%`}
               valueClassName={atsScore >= 90 ? "text-green-400" : atsScore >= 70 ? "text-cyan-400" : "text-orange-400"}
               progress={atsScore}
               progressClassName="bg-gradient-to-r from-green-400 to-emerald-500"
+              description="Rule-based guidance only; not a score from an ATS product."
             />
             <MetricCard
               title="Job Match Score"

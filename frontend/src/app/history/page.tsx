@@ -134,11 +134,17 @@ export default function HistoryPage() {
 
                   <div>
                     <p className="text-white/50">
-                      ATS Score
+                      Heuristic ATS estimate
                     </p>
 
-                    <p className="text-green-400 text-xl font-bold">
+                    <p
+                      className="text-green-400 text-xl font-bold"
+                      title="Rule-based guidance, not a score from an ATS product."
+                    >
                       {item.ats_score}
+                    </p>
+                    <p className="mt-1 max-w-36 text-xs text-white/40">
+                      Not from an ATS product
                     </p>
                   </div>
 
