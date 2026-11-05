@@ -3,6 +3,14 @@ import CareerCoachWidget from "@/components/career/CareerCoachWidget";
 
 const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
 
+function jsonResponse(body: unknown, status = 200): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  } as Response;
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   global.fetch = fetchMock;
@@ -15,12 +23,9 @@ afterEach(() => {
 test("shows the floating coach to signed-in users and sends a chat request", async () => {
   fetchMock.mockImplementation(async (input) => {
     if (String(input).includes("/api/auth/session")) {
-      return new Response(JSON.stringify({ authenticated: true }), { status: 200 });
+      return jsonResponse({ authenticated: true });
     }
-    return new Response(JSON.stringify({ answer: "Let's map your next step." }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ answer: "Let's map your next step." });
   });
 
   render(<CareerCoachWidget />);
@@ -53,7 +58,7 @@ test("shows the floating coach to signed-in users and sends a chat request", asy
 });
 
 test("does not render the coach for signed-out users", async () => {
-  fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+  fetchMock.mockResolvedValue(jsonResponse({}, 401));
 
   render(<CareerCoachWidget />);
 
