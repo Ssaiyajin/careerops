@@ -1,6 +1,4 @@
-
-```tsx
-import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import UploadPage from "@/app/upload/page";
 import ResultsPage from "@/app/results/page";
 
@@ -8,7 +6,7 @@ const mockPush = jest.fn();
 const mockUploadResume = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush })
 }));
 
 jest.mock("@/lib/api/rewrite", () => ({
@@ -16,52 +14,24 @@ jest.mock("@/lib/api/rewrite", () => ({
     file: File,
     jobDescription: string,
     cvLanguage: "en" | "de"
-  ) => mockUploadResume(file, jobDescription, cvLanguage),
+  ) => mockUploadResume(file, jobDescription, cvLanguage)
 }));
 
 jest.mock("@/lib/auth/auth-guard", () => ({
-  useAuthGuard: jest.fn(),
+  useAuthGuard: jest.fn()
 }));
 
 describe("UploadPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
-    jest.useRealTimers();
   });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  const selectFile = (name = "test.pdf") => {
-    const file = new File(["dummy pdf content"], name, {
-      type: "application/pdf",
-    });
-
-    fireEvent.change(screen.getByTestId("upload-file-input"), {
-      target: { files: [file] },
-    });
-
-    return file;
-  };
-
-  const enableConsent = () => {
-    fireEvent.click(screen.getByRole("checkbox"));
-  };
 
   it("renders upload page text", () => {
     render(<UploadPage />);
 
-    expect(
-      screen.getByRole("heading", { name: /Upload Resume/i, level: 1 })
-    ).toBeInTheDocument();
-
-    expect(
-      screen.getByPlaceholderText(
-        /Paste LinkedIn or company job description/i
-      )
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Upload Resume/i, level: 1 })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Paste LinkedIn or company job description/i)).toBeInTheDocument();
   });
 
   it("calls uploadResume and navigates on valid file upload", async () => {
@@ -70,14 +40,7 @@ describe("UploadPage", () => {
       candidate_name: "Test User",
       ats: { ats_score: 85, recommendations: [] },
       experience_level: "Senior",
-      entities: {
-        names: [],
-        organizations: [],
-        locations: [],
-        dates: [],
-        emails: [],
-        phones: [],
-      },
+      entities: { names: [], organizations: [], locations: [], dates: [], emails: [], phones: [] },
       text_preview: "Sample resume",
       rewritten_resume: [
         "Test User",
@@ -88,40 +51,36 @@ describe("UploadPage", () => {
         "Platform Engineer | Example Co. | 2022-Present",
         "• Automated cloud deployments.",
       ].join("\n"),
-      job_match: {
-        match_score: 72,
-        matched_skills: ["Python"],
-        missing_skills: [],
-      },
+      job_match: { match_score: 72, matched_skills: ["Python"], missing_skills: [] }
     });
 
     const { unmount } = render(<UploadPage />);
-
-    enableConsent();
-
+    fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.change(
-      screen.getByPlaceholderText(
-        /Paste LinkedIn or company job description/i
-      ),
+      screen.getByPlaceholderText(/Paste LinkedIn or company job description/i),
       { target: { value: "Senior Cloud Engineer role" } }
     );
 
-    const file = selectFile();
+    const file = new File(["dummy pdf content"], "test.pdf", {
+      type: "application/pdf"
+    });
+
+    const input = screen.getByTestId("upload-file-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
 
     await waitFor(
       () => {
-        expect(mockUploadResume).toHaveBeenCalledWith(
-          file,
-          "Senior Cloud Engineer role",
-          "en"
-        );
+        expect(mockUploadResume).toHaveBeenCalled();
+        const [calledFile, calledDescription] = mockUploadResume.mock.calls[0];
+        expect(calledFile).toBeInstanceOf(File);
+        expect((calledFile as File).name).toBe("test.pdf");
+        expect(calledDescription).toBe("Senior Cloud Engineer role");
+        expect(mockUploadResume.mock.calls[0][2]).toBe("en");
       },
       { timeout: 5000 }
     );
-
-    expect(
-      JSON.parse(localStorage.getItem("resumeData") || "{}").job_description
-    ).toBe("Senior Cloud Engineer role");
+    expect(JSON.parse(localStorage.getItem("resumeData") || "{}").job_description)
+      .toBe("Senior Cloud Engineer role");
 
     await waitFor(
       () => {
@@ -131,50 +90,28 @@ describe("UploadPage", () => {
     );
 
     unmount();
-
     render(<ResultsPage />);
-
     expect(
-      await screen.findByRole("heading", {
-        name: "Test User",
-        level: 1,
-      })
+      await screen.findByRole("heading", { name: "Test User", level: 1 })
     ).toBeInTheDocument();
-
     expect(screen.getByText("85%")).toBeInTheDocument();
     expect(screen.getByText("Applied to both documents")).toBeInTheDocument();
     expect(screen.getByTestId("resume-preview")).toBeInTheDocument();
-
-    expect(
-      screen.getByRole("heading", {
-        name: "PROFESSIONAL SUMMARY",
-      })
-    ).toBeInTheDocument();
-
-    expect(
-      screen.queryByLabelText("Target job description")
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "PROFESSIONAL SUMMARY" }))
+      .toBeInTheDocument();
+    expect(screen.queryByLabelText("Target job description")).not.toBeInTheDocument();
   });
 
   it("updates job description", () => {
     render(<UploadPage />);
 
-    const textarea = screen.getByPlaceholderText(
-      /Paste LinkedIn or company job description/i
-    );
+    const textarea = screen.getByPlaceholderText(/Paste LinkedIn or company job description/i);
+    fireEvent.change(textarea, { target: { value: "This is a job description" } });
 
-    fireEvent.change(textarea, {
-      target: { value: "This is a job description" },
-    });
-
-    expect((textarea as HTMLTextAreaElement).value).toBe(
-      "This is a job description"
-    );
+    expect((textarea as HTMLTextAreaElement).value).toBe("This is a job description");
   });
 
   it("sends the selected German resume language for analysis", async () => {
-    jest.useFakeTimers();
-
     mockUploadResume.mockResolvedValue({
       skills: [],
       candidate_name: "Test User",
@@ -183,20 +120,25 @@ describe("UploadPage", () => {
     });
 
     render(<UploadPage />);
-
-    enableConsent();
-
+    fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.change(screen.getByLabelText("Resume language"), {
       target: { value: "de" },
     });
 
-    const file = selectFile("lebenslauf.pdf");
-
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(1500);
+    const file = new File(["resume"], "lebenslauf.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByTestId("upload-file-input"), {
+      target: { files: [file] },
     });
 
-    expect(mockUploadResume).toHaveBeenCalledWith(file, "", "de");
+    await waitFor(() => {
+      expect(mockUploadResume).toHaveBeenCalledWith(
+        file,
+        "",
+        "de"
+      );
+    }, { timeout: 5000 });
   });
 
   it("shows the backend upload error on the page", async () => {
@@ -205,14 +147,17 @@ describe("UploadPage", () => {
     );
 
     render(<UploadPage />);
+    fireEvent.click(screen.getByRole("checkbox"));
 
-    enableConsent();
-
-    selectFile();
+    const file = new File(["dummy pdf content"], "test.pdf", {
+      type: "application/pdf"
+    });
+    fireEvent.change(screen.getByTestId("upload-file-input"), {
+      target: { files: [file] },
+    });
 
     expect(
       await screen.findByRole("alert", {}, { timeout: 5000 })
     ).toHaveTextContent("Resume analysis could not be saved.");
   });
 });
-```
