@@ -50,8 +50,9 @@ provider-independent inference are not implemented.
 ### First-release focus
 
 The first release focuses on resume analysis against a supplied job
-description, per-account history, and privacy controls. Interview preparation
-and personalized learning plans remain future scope. See
+description, per-account history, privacy controls, and a Gemini-powered
+career coach for chat, interview preparation, and personalized learning plans.
+See
 [current state and limitations](#current-state-and-limitations) for important
 constraints.
 
@@ -65,18 +66,30 @@ constraints.
 - Resume analysis and job-description skill matching
 - Resume rewriting, cover-letter generation, and resume recommendations through Google Gemini
 - Resume history and DOCX export
+- Authenticated career chat, tailored interview preparation, and time-bounded learning plans through Google Gemini
+- A floating, animated CareerOps coach available to signed-in users
 
 The ATS score is a deterministic heuristic based on extracted skills, contact details, resume length, and a small set of certification keywords. It is not produced by an AI model and does not predict the score from a specific applicant tracking system. Semantic matching is optional and depends on its backend setting.
 
 Gemini requests use the external Google Gemini API with the `gemini-2.5-flash` model and require `GEMINI_API_KEY`. Resume recommendations, rewrites, and cover letters are therefore subject to provider availability, terms, and usage costs.
 
-The provider abstraction in `backend/app/services/ai_provider.py` is currently a stub and is not used by these workflows. Ollama, Mistral, and Phi-3 are not currently supported providers.
+The career coach uses Google Gemini, just like the existing writing features.
+It can use an analyzed resume and job description when the user explicitly
+loads or supplies that context. Context and prompts are sent to Gemini to
+generate a response; chat transcripts are kept in browser memory only and are
+not persisted by CareerOps. Generation is subject to the account's existing
+request and daily usage limits.
 
-#### Planned
-- Career guidance chat
-- Interview preparation and question generation
-- Personalized learning plans and roadmaps
-- A working provider abstraction and optional self-hosted model support
+The authenticated coaching API is available at `GET /api/career/context`,
+`POST /api/career/chat`, `POST /api/career/interview-prep`, and
+`POST /api/career/learning-plan`. The floating coach appears for signed-in
+users; it does not retain conversations between browser sessions.
+
+Self-hosted AI is intentionally out of scope: the current hosting and hardware
+cannot support it. `backend/app/services/ai_provider.py` is an unwired,
+reserved extension point that raises `NotImplementedError`; it is not a
+working provider integration. CareerOps sends AI generation requests only to
+Google Gemini and requires `GEMINI_API_KEY`.
 
 ---
 
@@ -340,13 +353,23 @@ commands above.
 
 ### Roadmap
 
-Career chat, interview preparation, and personalized learning plans remain future scope. The current AI provider implementation uses Gemini directly; alternative providers and self-hosted inference are not wired up yet.
+The current release includes Gemini-backed career chat, interview preparation,
+and personalized learning plans. Further coaching capabilities may evolve over
+time. Self-hosted inference is cancelled/out of scope for the current setup;
+the reserved provider extension point is not connected to any request path.
 
 ### Privacy and Account Lifecycle
 
 Resume text and analysis results are automatically removed from the active database after 90 days (`RESUME_RETENTION_DAYS`, swept daily). The History page also provides immediate account deletion for the account, saved analyses, and usage events. Managed database backups are outside the application; the release policy is a maximum 30-day backup retention, which must be configured and verified with the database provider.
 
-Resume text is sent to Google's Gemini API for recommendations and rewriting. Generating a cover letter also sends resume text and the supplied job description to Gemini. These requests are subject to Google's current service terms and data-handling policies. The upload screen requests consent before analysis.
+Resume text is sent to Google's Gemini API for recommendations and rewriting.
+Generating a cover letter also sends resume text and the supplied job
+description to Gemini. Career-coach requests send the prompt and any optional
+resume/job-description context included with the request to Gemini. Loading the
+latest resume into the coach is user-initiated; coach conversations are not
+stored by CareerOps. These requests are subject to Google's current service
+terms and data-handling policies. The upload screen requests consent before
+analysis.
 
 The browser uses a same-origin Next.js backend-for-frontend. It stores the bearer token in an HttpOnly, SameSite cookie (Secure in production), forwards it to FastAPI server-side, and checks Origin on mutating requests. JavaScript retains only a non-secret UI hint. The frontend server requires `BACKEND_API_URL` to reach FastAPI; the production image uses the private Compose service address, while the Dev Vercel preview uses the Dev Render backend URL.
 
