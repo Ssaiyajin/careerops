@@ -307,12 +307,23 @@ jobs:
                     --header "Accept: application/json" \
                     "https://api.render.com/v1/services/${RENDER_SERVICE_ID}")"
                   service_url="$(jq -er '.serviceDetails.url // .url' <<< "$service")"
-                  health="$(curl --fail --silent --show-error --location \
-                    --retry 20 --retry-connrefused --retry-delay 3 --max-time 15 \
-                    "${service_url%/}/health")"
-                  jq -e '.status == "healthy"' <<< "$health" > /dev/null
-                  echo "Render /health returned healthy for $COMMIT_SHA."
-                  exit 0
+                  health_status="$(curl --silent --show-error --location \
+                    --max-time 30 \
+                    --output "$RUNNER_TEMP/render-health-response.txt" \
+                    --write-out '%{http_code}' \
+                    "${service_url%/}/health")" || true
+
+                  echo "Health-check HTTP status: $health_status"
+                  echo "Health-check response:"
+                  cat "$RUNNER_TEMP/render-health-response.txt"
+
+                  if [[ "$health_status" != "200" ]]; then
+                    echo "Render health check failed."
+                    exit 1
+                  fi
+
+                  jq -e '.status == "healthy"' \
+                    "$RUNNER_TEMP/render-health-response.txt" > /dev/null
                   ;;
                 build_failed|update_failed|pre_deploy_failed|canceled)
                   echo "Render deployment for $COMMIT_SHA failed with status: $status" >&2
